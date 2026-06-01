@@ -232,7 +232,7 @@ class RigDesktopCatApp:
             "happy": 48,
             "happy_right": 48,
             "cute": 44,
-            "sleep_in": 96,
+            "sleep_in": 99,
             "sleep": 11,
             "wake": 96,
             "walk": 16,

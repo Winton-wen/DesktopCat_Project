@@ -26,7 +26,7 @@
     "wave": {"frames": 17, "fps": 14, "loop": false},
     "clicked": {"frames": 9, "fps": 14, "loop": false},
     "happy": {"frames": 48, "fps": 24, "loop": false},
-    "sleep_in": {"frames": 96, "fps": 24, "loop": false},
+    "sleep_in": {"frames": 99, "fps": 24, "loop": false},
     "sleep": {"frames": 11, "fps": 8, "loop": true},
     "wake": {"frames": 96, "fps": 24, "loop": false},
     "walk": {"frames": 16, "fps": 14, "loop": false},
