@@ -2,6 +2,16 @@
 
 DesktopCat is a Windows desktop pet project. The current reset focuses on one thing first: making the kitten animation look polished before adding more systems.
 
+## Current Handoff
+
+If you are opening this project in a new Codex window, start here:
+
+```text
+docs/NEXT_SESSION_HANDOFF.md
+```
+
+That file is the current source of truth for project status, known animation issues, Git/GitHub setup, and the next-session prompt.
+
 ## Current Visual Target
 
 The active character is a cute 3D chibi cream orange-and-white kitten with:

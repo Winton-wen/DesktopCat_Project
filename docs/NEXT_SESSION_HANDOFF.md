@@ -1,193 +1,227 @@
-# DesktopCat 新对话交接说明
+# DesktopCat 新窗口交接说明
 
-更新日期：2026-05-26
+更新日期：2026-06-01
 
-## 项目目标
+## 一句话目标
 
-这是一个 Windows 桌面宠物项目，当前工程名仍在 `E:\Project\DesktopPig_Project`，产品目标是做成类似 QQ 宠物那种商业级“活物感”的桌面小猫。角色是一只 3D Q 版奶油橘白小猫，必须始终戴粉棕格纹大蝴蝶结和金色铃铛，拥有大圆深棕眼睛、粉色鼻子、淡粉腮红、短圆身体和蓬松环纹尾巴。
-
-用户最在意的是动画质感和角色一致性，不是复杂养成系统。当前阶段只保留核心交互：点击、拖拽、冒泡、走路、睡觉/唤醒、托盘菜单。养成、联网、账号、商店、同步等都暂不做。
-
-## 当前可运行版本
-
-当前可运行 exe：
-
-`E:\Project\DesktopPig_Project\dist\DesktopCat\DesktopCat.exe`
-
-当前版本快照压缩包：
-
-`E:\Project\DesktopPig_Project\backups\DesktopCat_v2_sprite_snapshot_20260526_111748.zip`
-
-该压缩包包含源码、素材、文档、参考图、工具脚本和当前 `dist`，排除了 `.petvenv`、`build` 和 smoke 临时配置目录。
-
-## 当前技术栈
-
-- 运行时：Python + Tkinter + Pillow + pystray。
-- 打包：PyInstaller，通过 `build.ps1` 输出 `dist\DesktopCat\DesktopCat.exe`。
-- 素材处理：`tools/process_generated_strips.py`、`tools/stabilize_sprites.py`、`tools/make_motion_contact.py`、`tools/make_motion_gifs.py`。
-- 当前不是 PySide6，也不是真正 Live2D/Spine。当前是 polished sprite pet，也就是透明 PNG 帧动画桌宠。
-
-## 当前功能状态
-
-当前版本已经具备：
-
-- 透明置顶桌宠窗口。
-- 托盘菜单：开心、挥手、睡觉、显示/隐藏、自启、重置位置、配置、退出。
-- 可拖拽移动。
-- 点击交互。
-- 自适应黑框白底气泡，气泡尖角指向小猫中心。
-- 拖拽时气泡跟随移动。
-- 重置位置时气泡立即跟随新位置。
-- 左右双向走路：`walk` 向右，`walk_left` 向左。
-- 走路进入时随机方向，但靠近左边界只能向右，靠近右边界只能向左，避免边界处左右朝向抽搐。
-- 睡觉状态机：
-  - `sleep_in` 入睡过渡。
-  - `sleep` 持续睡觉。
-  - 睡觉期间随机冒泡静默。
-  - 睡觉时点击会播放 `wake` 醒来，再回待机。
-
-## 当前动作与素材
-
-当前动作目录在：
-
-`E:\Project\DesktopPig_Project\assets\sprites`
-
-当前动作包括：
-
-- `idle`：16 帧，基于 `blink/00` 开眼帧生成的轻微上下呼吸。尺寸和亮度与眨眼开眼帧一致。
-- `blink`：10 帧眨眼。
-- `clicked`：9 帧点击惊讶。
-- `happy`：27 帧，举爪开心动作，通过关键帧重复延长举爪和放爪过程，避免一帧完成。
-- `wave`：17 帧挥爪。
-- `sleep_in`：11 帧入睡过渡。
-- `sleep`：11 帧睡觉循环。
-- `wake`：11 帧醒来过渡。
-- `walk`：14 帧右走。
-- `walk_left`：14 帧，由 `walk` 镜像生成。
-- `drag`：8 帧稳定拖拽姿态。
-
-QA 图：
-
-- `E:\Project\DesktopPig_Project\assets\qa\motion_contact_sheet.png`
-- `E:\Project\DesktopPig_Project\assets\qa\sprite_contact_sheet.png`
-- `E:\Project\DesktopPig_Project\assets\qa\gifs\`
-
-## 最近验证过的行为
-
-最近一轮验证结果：
-
-- `gui_sleep_random_silent_ok`：睡觉时随机冒泡静默，点击唤醒仍显示醒来气泡。
-- `python_ast_ok`：Python 语法检查通过。
-- `gui_state_machine_smoke_ok`：重置气泡、走路边界方向、睡眠唤醒状态机通过。
-- `packaged_smoke_ok`：打包后的 exe 能启动并被关闭。
-
-## 当前已知问题和限制
-
-当前 sprite 路线仍有这些硬限制：
-
-- 动作之间依然是整张图切换，无法达到真正 QQ 宠物那种连续骨骼生命感。
-- `sleep_in`/`wake` 是工程过渡帧，不是真正手绘/骨骼过渡，能缓解但不能根治动作跳变。
-- `happy` 目前通过重复关键帧延长动作，不是真正插值骨骼动画。
-- Tkinter 透明窗口使用 transparent color，不是完美 per-pixel alpha，边缘抗锯齿和透明细节会受限制。
-- 现有素材来自 AI 生成长条图，角色一致性已经做过很多修正，但继续做商业级效果会越来越吃力。
-
-## 为什么要升级到伪 Live2D/Spine
-
-用户最终目标是 QQ 宠物级“活物感”。当前整图 sprite 帧动画的问题是：
-
-- 同一动作内部可以靠更多帧改善，但动作之间仍然会跳。
-- 角色的头、身体、眼睛、爪子、尾巴、蝴蝶结、铃铛无法独立运动。
-- 表情、眨眼、尾巴摆动、身体呼吸、铃铛摇摆无法自然叠加。
-
-下一阶段应升级为“伪 Live2D/Spine 风格”：把角色拆成独立层，通过代码做层级骨骼、锚点、旋转、缩放、位移和缓动。目标不是立刻接入官方 Live2D/Spine runtime，而是在当前 Python 桌宠里先实现一套轻量 2D rig。
-
-## 下一阶段建议路线
-
-推荐分 5 步推进：
-
-1. 资产分层
-   - 从当前最稳定的正面小猫图生成或手工拆分层。
-   - 至少拆出：身体、头、左耳、右耳、左眼、右眼、眼皮/眨眼层、嘴、腮红、左前爪、右前爪、后爪、尾巴分段、蝴蝶结左右片、蝴蝶结结心、铃铛。
-   - 每层必须透明 PNG，保存到 `assets/rig_parts/desktop_cat/`。
-
-2. 定义 rig 配置
-   - 新建 `assets/rig_parts/desktop_cat/rig.json`。
-   - 描述每层的 parent、pivot、default position、z-index、scale、rotation limit。
-   - 所有动作通过 rig 配置驱动，而不是直接切整张图。
-
-3. 实现伪骨骼渲染器
-   - 新建 `src/desktop_cat/rig/`。
-   - 用 Pillow 或 Tk Canvas 组合各个部件。
-   - 每一帧根据时间计算各层 transform，再合成为一张透明图显示。
-   - 初期可以继续用 Tkinter，后续如需要更好透明度再迁移 PySide6。
-
-4. 动作系统重写
-   - `idle`：身体轻微呼吸、尾巴慢摆、耳朵微动、铃铛轻微跟随。
-   - `blink`：只动眼皮层，不换整只猫。
-   - `happy`：身体弹跳、前爪上抬、眼睛高光/嘴部变化、尾巴加速摆动、铃铛摆动。
-   - `walk`：身体水平移动、脚步层交替、尾巴反向摆动。
-   - `sleep_in/sleep/wake`：头和身体缓慢压低/抬起，眼皮闭合/张开。
-   - 动作之间用 easing 过渡，不直接切换图片。
-
-5. QA 和打包
-   - 保留现有 QA 流程，但增加 rig 动作录制 GIF。
-   - 每个动作必须生成预览 GIF 和 contact sheet。
-   - 每次打包后启动 exe 冒烟测试。
-
-## 建议的新目录结构
-
-建议新增：
+这是一个 Windows 桌面宠物小猫项目，仓库路径是：
 
 ```text
-assets/
-  rig_parts/
-    desktop_cat/
-      body.png
-      head.png
-      eye_left.png
-      eye_right.png
-      eyelid_left.png
-      eyelid_right.png
-      paw_front_left.png
-      paw_front_right.png
-      tail_01.png
-      tail_02.png
-      tail_03.png
-      bow_left.png
-      bow_right.png
-      bow_center.png
-      bell.png
-      rig.json
-src/
-  desktop_cat/
-    rig/
-      __init__.py
-      model.py
-      renderer.py
-      animation.py
-      motions.py
-tools/
-  make_rig_preview.py
-  export_rig_contact_sheet.py
+E:\Project\DesktopPig_Project
 ```
 
-## 给新对话的建议第一步
+最终目标是做出接近 QQ 宠物级别的“活物感”：角色稳定、动作自然、可拖拽、可交互、可打包运行。当前优先级是动画资产和视觉 QA，不是养成系统、商城、联网、账号或复杂设置。
 
-新对话开始后，建议直接说：
+## 当前 Git / GitHub 状态
 
-“请读取 `docs/NEXT_SESSION_HANDOFF.md`，我们从当前 DesktopCat v2 sprite 快照继续，开始升级到伪 Live2D/Spine 风格。第一步先做资产分层和 rig.json，不要先重写运行时。”
+- 本地已初始化 Git 仓库。
+- 当前分支：`main`
+- GitHub 远端：`https://github.com/Winton-wen/DesktopCat_Project.git`
+- 当前提交：`e544c6c Initial DesktopCat project`
+- 本地 `main` 已推送并跟踪 `origin/main`。
+- `.gitignore` 已排除 `.petvenv/`、`build/`、`dist/`、`backups/`、QA 生成物、smoke 临时配置、缓存和 `*_before_synth/`。
+- GitHub CLI 已安装并登录为 `Winton-wen`；如果当前终端找不到 `gh`，重开终端即可。
 
-然后让新会话先完成：
+常用习惯：每完成一个小阶段就提交，阶段可运行时再推送。用户不想死记命令，可以直接让 Codex “提交并推送当前版本”。
 
-1. 读取 `docs/NEXT_SESSION_HANDOFF.md`、`docs/character-spec.md`、`docs/animation-contract-v2.md`。
-2. 检查 `assets/sprites/idle/00.png`、`assets/sprites/blink/00.png`、`assets/generated_strips_v2`。
-3. 选择一张最稳定的正面图作为 rig 分层母图。
-4. 生成或拆分第一版 `assets/rig_parts/desktop_cat/`。
-5. 先做 `idle` 和 `blink` 的 rig 预览，不要一次性改完所有动作。
+## 必须先读的文档
 
-## 注意事项
+新窗口开始时请读取：
 
-- 不要删除当前 sprite 版本；它是可运行基线。
-- 不要直接把现有运行时全部推倒重写。先做并行 rig preview，确认视觉效果后再切换运行时。
-- 不要再用长条 AI 图硬切来追求商业级效果；下一阶段核心是“分层 + 骨骼 + 缓动”。
-- 如果继续用 AI 生成素材，必须要求透明背景、单独部件、同一视角、同一光照、同一配饰，并逐层 QA。
+```text
+docs/NEXT_SESSION_HANDOFF.md
+docs/character-spec.md
+docs/animation-contract-v2.md
+docs/asset-production-pipeline.md
+assets/production/desktop_cat/batch_manifest.json
+```
+
+## 角色锁定
+
+主角是一只 3D Q 版奶油橘白小猫：
+
+- 大头短圆身体，软萌玩偶比例。
+- 大而亮的深棕色眼睛。
+- 小粉鼻、淡腮红。
+- 橘白虎斑，白色嘴套、胸腹、爪子。
+- 蓬松环纹尾巴。
+- 粉棕格纹大蝴蝶结。
+- 蝴蝶结中心有金色铃铛。
+
+蝴蝶结、铃铛、眼睛颜色、橘白纹路、尾巴形状是身份锚点，不能在动作之间漂移、消失或换样式。
+
+## 当前运行入口
+
+稳定版和候选版都保留，不要删除。
+
+候选预览入口：
+
+```powershell
+python candidate_launcher.py 20260527_motion_quality_v1
+```
+
+已打包候选 exe：
+
+```text
+dist\DesktopCatCandidatePreview\DesktopCatCandidatePreview.exe
+```
+
+稳定/历史版本入口：
+
+```text
+dist\DesktopCat\DesktopCat.exe
+dist\DesktopCatStablePreview\DesktopCatStablePreview.exe
+```
+
+## 当前技术路线
+
+当前实际路线是 **polished sprite pet first**，也就是先用完整透明 PNG 帧把动作质量做上去。曾经尝试过伪 Live2D/rig，但早期切层造成过耳朵缺角、爪子缺口、挥手凭空多一只手等问题，所以不要一上来替换运行时。
+
+长期路线可以是：
+
+1. 先把完整 sprite 动作做到自然、可播放、可 QA。
+2. 等关键动作稳定后，再考虑伪 Live2D / Spine / Live2D 风格的分层 rig。
+
+## 当前资产结构
+
+核心目录：
+
+```text
+assets/sprites/
+assets/production/desktop_cat/
+assets/production/desktop_cat/batches/stable_v2_baseline/
+assets/production/desktop_cat/batches/20260526_batch1_idle_blink_wave/
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/
+assets/rig_parts/desktop_cat/
+src/desktop_cat/
+tools/
+tests/
+```
+
+生产批次说明：
+
+- `stable_v2_baseline`：受保护的稳定基线，不要覆盖。
+- `20260526_batch1_idle_blink_wave`：可运行候选批次，但动作质量不是最终。
+- `20260527_motion_quality_v1`：当前主力候选批次，目标是替换 happy、cute、sleep_in、wake、walk 等动作。
+
+## 当前已知动作问题
+
+用户最近明确指出的问题：
+
+1. `happy` 和 `cute` 播放时小猫尺寸明显比其他动作小很多。
+2. 用户认为 `happy/cute` 这个尺寸更合适，因此下一步应把所有动作统一到这个视觉尺寸，而不是把 happy/cute 放大。
+3. `happy`、`cute` 帧率观感很低。原因不是 FPS 数字太低，而是真实不同姿态数量太少，很多帧只是重复保持。
+4. `walk` 帧率观感低，而且有点鬼畜，需要真实步态和更平稳位移。
+5. `sleep_in` / `wake` 仍然不合格：旧版像小猫变扁/突然坐起，不像自然入睡或醒来。
+
+当前量化状态，来自 `20260527_motion_quality_v1/clean`：
+
+```text
+idle      16 frames, visible height about 430
+blink     10 frames, visible height about 430
+wave      17 frames, visible height about 430
+clicked    9 frames, visible height about 430
+happy     48 frames, visible height about 184-323
+cute      44 frames, visible height about 284-305
+sleep_in  11 frames, visible height about 341-430
+sleep     11 frames, visible height about 339-344
+wake      11 frames, visible height about 341-430
+walk      14 frames, visible height about 430
+walk_left 14 frames, visible height about 430
+drag       8 frames, visible height about 430
+```
+
+结论：必须做视觉尺寸统一，目标高度大约 300px 左右，接近 `cute`。
+
+## 最近已经做但未完成的工作
+
+已经生成了高密度 v2 姿态表，保存在：
+
+```text
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/happy_24poses_v2_chromakey.png
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/cute_24poses_v2_chromakey.png
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/sleep_in_24poses_v2_chromakey.png
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/wake_24poses_v2_chromakey.png
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/walk_right_16poses_v2_chromakey.png
+```
+
+其中 `sleep_in_24poses_v2_chromakey.png` 已视觉检查过：它是逐步犯困、低头、趴下、蜷睡，不是变扁。
+
+已更新导入工具：
+
+```text
+tools/import_keypose_sheet.py
+```
+
+它现在支持：
+
+- `--action`
+- `--frames`
+- `--mirror-action`
+- `--target-extent`
+- 绿幕转 alpha
+- 只保留最大 alpha 连通主体，避免邻格碎片
+
+但注意：**v2 姿态表还没有完整导入到 clean 动作目录，没有跑完整 QA，也没有重新打包。** 新窗口下一步应从这里继续。
+
+## 推荐下一步
+
+第一阶段：完成尺寸统一和 v2 动作导入。
+
+建议顺序：
+
+1. 用 `tools/import_keypose_sheet.py` 把 v2 姿态表导入到临时 raw 目录，目标 `--target-extent 300`。
+2. 把 `happy` 从 24 姿态表扩展/导入到 manifest 所需 48 帧，或更新 manifest 到真实 24 帧并同步 runtime/test。优先推荐保留 48 帧，但用 24 姿态均匀重复，每个姿态 2 帧。
+3. 把 `cute` 从 24 姿态表扩展到 44 帧，或调整 manifest；优先避免大量无意义重复。
+4. 把 `sleep_in` / `wake` 由 11 帧提升为 24 帧时，要同步更新：
+   - `assets/production/desktop_cat/batch_manifest.json`
+   - `src/desktop_cat/sprite_manifest.py`
+   - `src/desktop_cat/rig_app.py` 里的 `ACTION_FPS` 和 `action_frame_count`
+   - tests
+5. 把 `walk_right_16poses_v2_chromakey.png` 导入为 `walk`，并镜像为 `walk_left`。
+6. 把其他动作 `idle/blink/wave/clicked/drag/sleep` 统一缩放到和 `cute` 接近的尺寸，建议目标可见最大边约 300px。
+7. 生成 contact sheet 和 gif：
+   ```powershell
+   python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --actions idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,drag
+   ```
+8. 自己查看 QA 图和 GIF，重点看：
+   - 是否仍有尺寸跳变。
+   - 是否有绿边/碎片/缺耳缺爪。
+   - `happy/cute` 是否还是低帧率感。
+   - `sleep_in/wake` 是否自然。
+   - `walk/walk_left` 是否抖动或方向错。
+9. 通过后再打包 candidate，并 smoke test。
+
+## 重要原则
+
+- 不要删除稳定 exe 或稳定资产。
+- 不要把 `assets/sprites` 稳定基线当实验场乱改；优先在 `assets/production/desktop_cat/batches/20260527_motion_quality_v1` 里做候选。
+- 不要把位移、缩放、旋转 idle 图当作正式动作资产。
+- 动作合格标准以视觉 QA 为准，不只是测试通过。
+- 每完成一个阶段，建议提交并推送到 GitHub。
+
+## 新窗口推荐提示词
+
+请在新窗口直接粘贴下面这段：
+
+```text
+请先读取并遵循 E:\Project\DesktopPig_Project\docs\NEXT_SESSION_HANDOFF.md。
+
+我们继续 DesktopCat / DesktopPig 项目，仓库路径是 E:\Project\DesktopPig_Project。目标是做出接近 QQ 宠物级别的桌面小猫，当前路线是 polished sprite pet first，先把完整透明 PNG 动作资产做到自然和稳定，再考虑伪 Live2D/Spine。请不要删除或破坏已有稳定可运行版本，也不要把 stable 基线当实验场。
+
+当前最新问题是：
+1. happy/cute 的小猫尺寸更合适，但其他动作明显大很多，所以要把所有动作统一到 happy/cute 接近的视觉尺寸。
+2. happy/cute 的帧率观感仍低，需要用已生成的 24 姿态 v2 表继续导入/补帧，而不是 idle 变形。
+3. walk 低帧率且鬼畜，需要使用 walk_right_16poses_v2_chromakey.png 重做 walk，并镜像 walk_left。
+4. sleep_in/wake 旧版仍像变扁和突然坐起，需要使用 sleep_in_24poses_v2_chromakey.png 和 wake_24poses_v2_chromakey.png 重做。
+
+请先做上下文恢复：
+- 读取 docs/NEXT_SESSION_HANDOFF.md
+- 读取 docs/character-spec.md
+- 读取 docs/animation-contract-v2.md
+- 查看 assets/production/desktop_cat/batch_manifest.json
+- 查看 tools/import_keypose_sheet.py
+- 检查当前 git status
+
+然后继续下一步：在 20260527_motion_quality_v1 批次中完成尺寸统一、导入 v2 动作、生成 QA contact sheet/GIF，边看边改，直到 candidate preview 可打开检查。完成一个阶段后帮我提交并推送到 GitHub。
+```
