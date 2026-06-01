@@ -143,6 +143,17 @@ def copy_sequence(keyposes: list[Path], frame_count: int, out_dir: Path, mirror:
         source.save(out_dir / f"{frame_index:02d}.png")
 
 
+def resample_sequence(keyposes: list[Path], frame_count: int, out_dir: Path, mirror: bool = False) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for frame_index in range(frame_count):
+        phase = frame_index / max(1, frame_count - 1)
+        key_index = round(phase * (len(keyposes) - 1))
+        source = Image.open(keyposes[key_index]).convert("RGBA")
+        if mirror:
+            source = source.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        source.save(out_dir / f"{frame_index:02d}.png")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sheet", type=Path, required=True)
@@ -154,15 +165,17 @@ def main() -> None:
     parser.add_argument("--action", help="Optional action name to export directly from the sheet.")
     parser.add_argument("--frames", type=int, help="Frame count for --action export. Defaults to all keyposes.")
     parser.add_argument("--mirror-action", help="Optional second action exported as horizontally mirrored frames.")
+    parser.add_argument("--resample", action="store_true", help="Spread keyposes evenly across --frames instead of cycling.")
     args = parser.parse_args()
 
     keypose_dir = args.out_root / "keyposes"
     keyposes = split_keyposes(args.sheet, keypose_dir, args.columns, args.rows, args.canvas_size, args.target_extent)
     if args.action:
         frame_count = args.frames or len(keyposes)
-        copy_sequence(keyposes, frame_count, args.out_root / args.action)
+        sequence_builder = resample_sequence if args.resample else copy_sequence
+        sequence_builder(keyposes, frame_count, args.out_root / args.action)
         if args.mirror_action:
-            copy_sequence(keyposes, frame_count, args.out_root / args.mirror_action, mirror=True)
+            sequence_builder(keyposes, frame_count, args.out_root / args.mirror_action, mirror=True)
     else:
         build_sequence(keyposes, list(range(0, 8)), 48, args.out_root / "happy")
         build_sequence(keyposes, [8, 9, 10, 11, 10, 9, 8], 44, args.out_root / "cute")
@@ -172,6 +185,7 @@ def main() -> None:
         "action": args.action,
         "frames": args.frames or len(keyposes),
         "mirror_action": args.mirror_action,
+        "resample": args.resample,
         "target_extent": args.target_extent,
         "note": "Generated from real redrawn keyposes; still requires visual QA and may need hand or AI in-betweens.",
     }

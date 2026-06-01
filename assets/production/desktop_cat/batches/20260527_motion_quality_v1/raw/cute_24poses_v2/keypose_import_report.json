@@ -1,0 +1,10 @@
+{
+  "sheet": "assets\\production\\desktop_cat\\batches\\20260527_motion_quality_v1\\pose_sheets\\cute_24poses_v2_chromakey.png",
+  "keypose_count": 24,
+  "action": "cute",
+  "frames": 44,
+  "mirror_action": null,
+  "resample": true,
+  "target_extent": 300,
+  "note": "Generated from real redrawn keyposes; still requires visual QA and may need hand or AI in-betweens."
+}

@@ -44,6 +44,10 @@ class ProductionPipelineTests(unittest.TestCase):
             self.assertIn(action, manifest["actions"])
         self.assertEqual(48, manifest["actions"]["happy"]["frames"])
         self.assertEqual(44, manifest["actions"]["cute"]["frames"])
+        self.assertEqual(24, manifest["actions"]["sleep_in"]["frames"])
+        self.assertEqual(24, manifest["actions"]["wake"]["frames"])
+        self.assertEqual(16, manifest["actions"]["walk"]["frames"])
+        self.assertEqual(16, manifest["actions"]["walk_left"]["frames"])
         self.assertEqual(24, manifest["actions"]["happy"]["fps"])
         self.assertEqual(24, manifest["actions"]["cute"]["fps"])
 
@@ -284,6 +288,12 @@ class ProductionPipelineTests(unittest.TestCase):
                     "status": "candidate",
                     "source": str(candidate),
                     "qa_contact_sheet": "assets/qa/stable/stable_sprite_contact_sheet.png",
+                    "action_overrides": {
+                        "sleep_in": {"frames": 11},
+                        "wake": {"frames": 11},
+                        "walk": {"frames": 14},
+                        "walk_left": {"frames": 14},
+                    },
                     "notes": "test candidate",
                 }
             )
@@ -574,7 +584,7 @@ class ProductionPipelineTests(unittest.TestCase):
 
     def test_candidate_runtime_batch_has_all_interactive_action_frames(self) -> None:
         manifest = json.loads((PRODUCTION / "batch_manifest.json").read_text(encoding="utf-8"))
-        batch = next(batch for batch in manifest["batches"] if batch["id"] == "20260526_batch1_idle_blink_wave")
+        batch = next(batch for batch in manifest["batches"] if batch["id"] == "20260527_motion_quality_v1")
         source = ROOT / batch["source"]
         for action, spec in manifest["actions"].items():
             with self.subTest(action=action):

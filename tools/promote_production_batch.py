@@ -5,7 +5,7 @@ import json
 import shutil
 from pathlib import Path
 
-from audit_production_batch import audit_frames
+from audit_production_batch import action_specs_for_batch, audit_frames
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +42,7 @@ def promote(batch_id: str, manifest_path: Path, dry_run: bool) -> None:
 
     source = resolve_source(batch["source"])
     canvas_size = tuple(manifest["frame_standard"]["canvas_size"])
-    errors = audit_frames(source, manifest["actions"], canvas_size)
+    errors = audit_frames(source, action_specs_for_batch(manifest, batch), canvas_size)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -52,7 +52,7 @@ def promote(batch_id: str, manifest_path: Path, dry_run: bool) -> None:
         print(f"production_batch_promote_dry_run_ok batch={batch_id} source={source}")
         return
 
-    for action in manifest["actions"]:
+    for action in action_specs_for_batch(manifest, batch):
         target_dir = SPRITES / action
         target_dir.mkdir(parents=True, exist_ok=True)
         for old_frame in target_dir.glob("*.png"):

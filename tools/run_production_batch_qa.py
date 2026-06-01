@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from audit_production_batch import audit_frames, find_batch, load_manifest
+from audit_production_batch import action_specs_for_batch, audit_frames, find_batch, load_manifest
 from compare_production_batch import compare_batch
 from export_production_batch_qa import export_batch_qa
 from gate_production_batch import gate_batch
@@ -24,7 +24,7 @@ def run_full_qa(batch_id: str, actions: list[str]) -> dict:
 
     export_batch_qa(batch_id, actions)
 
-    action_specs = {action: manifest["actions"][action] for action in actions}
+    action_specs = action_specs_for_batch(manifest, batch, actions)
     canvas_size = tuple(manifest["frame_standard"]["canvas_size"])
     audit_errors = audit_frames(source, action_specs, canvas_size)
     audit_report = {

@@ -23,6 +23,17 @@ def find_batch(manifest: dict, batch_id: str) -> dict:
     raise SystemExit(f"Unknown production batch: {batch_id}")
 
 
+def action_specs_for_batch(manifest: dict, batch: dict, requested: list[str] | None = None) -> dict:
+    actions = requested or list(manifest["actions"].keys())
+    overrides = batch.get("action_overrides", {})
+    specs = {}
+    for action in actions:
+        spec = dict(manifest["actions"][action])
+        spec.update(overrides.get(action, {}))
+        specs[action] = spec
+    return specs
+
+
 def audit_frames(source: Path, actions: dict, canvas_size: tuple[int, int]) -> list[str]:
     errors: list[str] = []
     for action, spec in actions.items():
@@ -56,10 +67,10 @@ def main() -> None:
     batch = find_batch(manifest, args.batch)
     source = ROOT / batch["source"]
     canvas_size = tuple(manifest["frame_standard"]["canvas_size"])
-    action_specs = manifest["actions"]
+    requested = None
     if args.actions:
         requested = [item.strip() for item in args.actions.split(",") if item.strip()]
-        action_specs = {action: manifest["actions"][action] for action in requested}
+    action_specs = action_specs_for_batch(manifest, batch, requested)
     errors = audit_frames(source, action_specs, canvas_size)
     qa_path = ROOT / batch["qa_contact_sheet"]
     if not qa_path.exists():

@@ -26,11 +26,11 @@
     "wave": {"frames": 17, "fps": 14, "loop": false},
     "clicked": {"frames": 9, "fps": 14, "loop": false},
     "happy": {"frames": 48, "fps": 24, "loop": false},
-    "sleep_in": {"frames": 11, "fps": 10, "loop": false},
+    "sleep_in": {"frames": 24, "fps": 10, "loop": false},
     "sleep": {"frames": 11, "fps": 8, "loop": true},
-    "wake": {"frames": 11, "fps": 10, "loop": false},
-    "walk": {"frames": 14, "fps": 14, "loop": false},
-    "walk_left": {"frames": 14, "fps": 14, "loop": false},
+    "wake": {"frames": 24, "fps": 10, "loop": false},
+    "walk": {"frames": 16, "fps": 14, "loop": false},
+    "walk_left": {"frames": 16, "fps": 14, "loop": false},
     "cute": {"frames": 44, "fps": 24, "loop": false},
     "drag": {"frames": 8, "fps": 5, "loop": true}
   },
@@ -40,6 +40,12 @@
       "status": "protected_baseline",
       "source": "assets/sprites",
       "qa_contact_sheet": "assets/qa/stable/stable_sprite_contact_sheet.png",
+      "action_overrides": {
+        "sleep_in": {"frames": 11},
+        "wake": {"frames": 11},
+        "walk": {"frames": 14},
+        "walk_left": {"frames": 14}
+      },
       "notes": "Current reliable full-frame sprite route. Do not overwrite without a better audited batch."
     },
     {
@@ -47,6 +53,12 @@
       "status": "planned",
       "source": "assets/production/desktop_cat/batches/20260526_batch1_idle_blink_wave/clean",
       "qa_contact_sheet": "assets/production/desktop_cat/qa/20260526_batch1_idle_blink_wave/contact_sheet.png",
+      "action_overrides": {
+        "sleep_in": {"frames": 11},
+        "wake": {"frames": 11},
+        "walk": {"frames": 14},
+        "walk_left": {"frames": 14}
+      },
       "notes": "Playable candidate batch with all current baseline actions. Motion quality is not final."
     },
     {

@@ -74,13 +74,28 @@ def compare_batch(batch_id: str, actions: list[str], report_path: Path) -> dict:
 
     rows: list[dict] = []
     errors: list[str] = []
+    frame_count_mismatches: list[dict] = []
     for action in actions:
         candidate_frames = frame_paths(source, action)
         baseline_frames = frame_paths(baseline_source, action)
-        if len(candidate_frames) != len(baseline_frames):
-            errors.append(f"{action}: candidate has {len(candidate_frames)} frames, baseline has {len(baseline_frames)}")
+        if not candidate_frames:
+            errors.append(f"{action}: candidate has no frames")
             continue
-        for index, (candidate_path, baseline_path) in enumerate(zip(candidate_frames, baseline_frames)):
+        if not baseline_frames:
+            errors.append(f"{action}: baseline has no frames")
+            continue
+        if len(candidate_frames) != len(baseline_frames):
+            frame_count_mismatches.append(
+                {
+                    "action": action,
+                    "candidate": len(candidate_frames),
+                    "baseline": len(baseline_frames),
+                }
+            )
+        for index, candidate_path in enumerate(candidate_frames):
+            phase = index / max(1, len(candidate_frames) - 1)
+            baseline_index = round(phase * (len(baseline_frames) - 1))
+            baseline_path = baseline_frames[baseline_index]
             try:
                 rms = rms_difference(candidate_path, baseline_path)
             except ValueError as exc:
@@ -90,6 +105,7 @@ def compare_batch(batch_id: str, actions: list[str], report_path: Path) -> dict:
                 {
                     "action": action,
                     "index": index,
+                    "baseline_index": baseline_index,
                     "candidate_path": str(candidate_path),
                     "baseline_path": str(baseline_path),
                     "rms": round(rms, 4),
@@ -108,6 +124,7 @@ def compare_batch(batch_id: str, actions: list[str], report_path: Path) -> dict:
         "average_rms": round(sum(rms_values) / len(rms_values), 4) if rms_values else 0.0,
         "max_rms": max(rms_values) if rms_values else 0.0,
         "compare_sheet": str(sheet_path),
+        "frame_count_mismatches": frame_count_mismatches,
         "errors": errors,
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)

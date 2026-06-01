@@ -202,11 +202,11 @@ class RigDesktopCatApp:
             "drag": 8,
             "happy": 48,
             "cute": 44,
-            "sleep_in": 11,
+            "sleep_in": 24,
             "sleep": 11,
-            "wake": 11,
-            "walk": 14,
-            "walk_left": 14,
+            "wake": 24,
+            "walk": 16,
+            "walk_left": 16,
             "wave": 17,
         }.get(self.action, self.frames.count(self.action))
 

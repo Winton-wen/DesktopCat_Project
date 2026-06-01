@@ -10,13 +10,28 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+STABLE_FRAME_COUNTS = {
+    "idle": 16,
+    "blink": 10,
+    "clicked": 9,
+    "happy": 48,
+    "wave": 17,
+    "cute": 44,
+    "sleep_in": 11,
+    "sleep": 11,
+    "wake": 11,
+    "walk": 14,
+    "walk_left": 14,
+    "drag": 8,
+}
+
 
 class StableSpriteRouteTests(unittest.TestCase):
     def test_core_stable_sprite_assets_are_complete_transparent_and_512_square(self) -> None:
         from desktop_cat.sprite_manifest import ACTIONS
 
         sprite_root = ROOT / "assets" / "sprites"
-        expected = {action.name: action.frame_count for action in ACTIONS}
+        expected = {action.name: STABLE_FRAME_COUNTS[action.name] for action in ACTIONS}
         for action, frame_count in expected.items():
             with self.subTest(action=action):
                 frames = sorted((sprite_root / action).glob("*.png"))

@@ -19,11 +19,11 @@ ACTIONS = [
     SpriteAction("happy", 48, 24, "high-fps happy jump, hover, and settle"),
     SpriteAction("wave", 17, 14, "one front paw raised and waving"),
     SpriteAction("cute", 44, 24, "high-fps cute blink and tiny bounce"),
-    SpriteAction("sleep_in", 11, 10, "settle down into sleep"),
+    SpriteAction("sleep_in", 24, 10, "settle down into sleep"),
     SpriteAction("sleep", 11, 8, "curled or lying down, eyes closed, breathing"),
-    SpriteAction("wake", 11, 10, "wake up and return to sitting"),
-    SpriteAction("walk", 14, 14, "short alternating steps, body sway, bell follows"),
-    SpriteAction("walk_left", 14, 14, "mirrored short alternating steps for moving left"),
+    SpriteAction("wake", 24, 10, "wake up and return to sitting"),
+    SpriteAction("walk", 16, 14, "short alternating steps, body sway, bell follows"),
+    SpriteAction("walk_left", 16, 14, "mirrored short alternating steps for moving left"),
     SpriteAction("drag", 8, 5, "front paws lifted, soft hanging body, puzzled face"),
 ]
 
