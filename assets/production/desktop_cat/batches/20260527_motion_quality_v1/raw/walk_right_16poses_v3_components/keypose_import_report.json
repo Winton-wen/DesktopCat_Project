@@ -1,0 +1,12 @@
+{
+  "sheet": "assets\\production\\desktop_cat\\batches\\20260527_motion_quality_v1\\pose_sheets\\walk_right_16poses_v2_chromakey.png",
+  "keypose_count": 16,
+  "action": "walk",
+  "frames": 16,
+  "mirror_action": "walk_left",
+  "resample": false,
+  "component_extract": true,
+  "component_limit": 16,
+  "target_extent": 300,
+  "note": "Generated from real redrawn keyposes; still requires visual QA and may need hand or AI in-betweens."
+}

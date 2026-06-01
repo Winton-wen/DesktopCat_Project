@@ -103,6 +103,10 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertIn('"sleep_in"', app_source)
         self.assertIn('"wake"', app_source)
         self.assertIn('self.set_action("wake"', app_source)
+        release_source = inspect.getsource(rig_app.RigDesktopCatApp.on_release)
+        self.assertIn('press_action in {"sleep", "sleep_in"}', release_source)
+        self.assertIn('self.action == "wake"', release_source)
+        self.assertIn("return", release_source)
 
     def test_walk_action_moves_desktop_window_instead_of_only_playing_in_place(self) -> None:
         from desktop_cat import rig_app
@@ -111,6 +115,17 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertIn("walk_direction", app_source)
         self.assertIn("advance_walk", app_source)
         self.assertIn("self.root.geometry", inspect.getsource(rig_app.RigDesktopCatApp.advance_walk))
+
+    def test_happy_action_has_left_and_right_motion_variants(self) -> None:
+        from desktop_cat import rig_app
+
+        app_source = inspect.getsource(rig_app.RigDesktopCatApp)
+        self.assertIn('"happy_right"', app_source)
+        self.assertIn("happy_action_for_direction", app_source)
+        self.assertIn("advance_happy", app_source)
+        self.assertIn("self.root.geometry", inspect.getsource(rig_app.RigDesktopCatApp.advance_happy))
+        self.assertEqual("happy", rig_app.RigDesktopCatApp.happy_action_for_direction(None, -1))
+        self.assertEqual("happy_right", rig_app.RigDesktopCatApp.happy_action_for_direction(None, 1))
 
     def test_walk_menu_has_explicit_left_and_right_commands(self) -> None:
         from desktop_cat import rig_app
@@ -122,12 +137,14 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertIn("walk_right", inspect.getsource(rig_app.RigDesktopCatApp))
 
     def test_walk_step_does_not_snap_from_outside_safe_bounds(self) -> None:
-        from desktop_cat.rig_app import next_walk_x
+        from desktop_cat.rig_app import bounded_walk_direction, next_walk_x
 
         self.assertEqual(496, next_walk_x(current_x=500, direction=-1, min_x=8, max_x=400, step=4))
         self.assertEqual(500, next_walk_x(current_x=500, direction=1, min_x=8, max_x=400, step=4))
         self.assertEqual(12, next_walk_x(current_x=8, direction=1, min_x=8, max_x=400, step=4))
         self.assertEqual(8, next_walk_x(current_x=8, direction=-1, min_x=8, max_x=400, step=4))
+        self.assertEqual(-1, bounded_walk_direction(current_x=500, preferred=1, min_x=8, max_x=400))
+        self.assertEqual(1, bounded_walk_direction(current_x=0, preferred=-1, min_x=8, max_x=400))
 
     def test_cute_action_is_available_from_context_menu(self) -> None:
         from desktop_cat import rig_app

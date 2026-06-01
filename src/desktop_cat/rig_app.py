@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import math
 import time
 import tkinter as tk
 from tkinter import Menu
@@ -18,6 +19,8 @@ WIDTH = 280
 HEIGHT = 240
 DISPLAY_SIZE = 165
 WALK_STEP_PX = 4
+HAPPY_STEP_PX = 2
+HAPPY_HOP_PX = 14
 SCREEN_MARGIN = 8
 ACTION_FPS = {
     "idle": 12,
@@ -25,9 +28,10 @@ ACTION_FPS = {
     "wave": 12,
     "clicked": 12,
     "happy": 24,
-    "sleep_in": 10,
+    "happy_right": 24,
+    "sleep_in": 24,
     "sleep": 8,
-    "wake": 10,
+    "wake": 24,
     "walk": 14,
     "walk_left": 14,
     "cute": 24,
@@ -62,6 +66,14 @@ def next_walk_x(current_x: int, direction: int, min_x: int, max_x: int, step: in
             return current_x
         return min(current_x + step, max_x)
     return current_x
+
+
+def bounded_walk_direction(current_x: int, min_x: int, max_x: int, preferred: int) -> int:
+    if current_x <= min_x:
+        return 1
+    if current_x >= max_x:
+        return -1
+    return -1 if preferred < 0 else 1
 
 
 class StableSpriteFrameSource:
@@ -99,6 +111,19 @@ class ProductionBatchFrameSource(StableSpriteFrameSource):
         self.root = app_root() / "assets" / "production" / "desktop_cat" / "batches" / batch_id / "clean"
         self.frames: dict[str, list[ImageTk.PhotoImage]] = {}
         self.load()
+
+    def load(self) -> None:
+        super().load()
+        for folder in sorted(self.root.iterdir()):
+            if not folder.is_dir() or folder.name in self.frames:
+                continue
+            frames = []
+            for path in sorted(folder.glob("*.png")):
+                image = Image.open(path).convert("RGBA")
+                image.thumbnail((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
+                frames.append(ImageTk.PhotoImage(image))
+            if frames:
+                self.frames[folder.name] = frames
 
 
 def production_batch_clean_root(batch_id: str) -> Path:
@@ -175,7 +200,11 @@ class RigDesktopCatApp:
         self.action_until = 0.0
         self.drag_start: tuple[int, int] | None = None
         self.window_start: tuple[int, int] | None = None
+        self.press_action: str | None = None
+        self.drag_moved = False
         self.walk_direction = 1
+        self.happy_direction = 1
+        self.happy_start: tuple[int, int] | None = None
 
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
@@ -201,10 +230,11 @@ class RigDesktopCatApp:
             "clicked": 9,
             "drag": 8,
             "happy": 48,
+            "happy_right": 48,
             "cute": 44,
-            "sleep_in": 24,
+            "sleep_in": 96,
             "sleep": 11,
-            "wake": 24,
+            "wake": 96,
             "walk": 16,
             "walk_left": 16,
             "wave": 17,
@@ -224,13 +254,22 @@ class RigDesktopCatApp:
             self.action_until = now + random.uniform(1.2, 2.2)
         elif now > self.action_until and self.action == "idle" and not self.drag_start:
             self.random_idle_action(now)
-        if self.action in {"walk", "walk_left"} and not self.drag_start:
+        if self.action in {"happy", "happy_right"} and not self.drag_start:
+            self.advance_happy()
+        elif self.action in {"walk", "walk_left"} and not self.drag_start:
             self.advance_walk()
         self.draw()
         self.root.after(max(42, round(1000 / ACTION_FPS.get(self.action, 12))), self.tick)
 
     def random_idle_action(self, now: float) -> None:
         action = random.choices(["idle", "blink", "wave", "happy", "cute", "sleep_in", "walk"], weights=[58, 22, 5, 5, 4, 2, 4], k=1)[0]
+        if action == "walk":
+            self.walk()
+            return
+        if action == "happy":
+            self.happy_direction = self.next_horizontal_direction()
+            self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
+            action = self.happy_action_for_direction(self.happy_direction)
         self.action = action
         self.frame = 0
         self.action_until = now + random.uniform(3.0, 6.0)
@@ -239,6 +278,8 @@ class RigDesktopCatApp:
         self.action = action
         self.frame = 0
         self.action_until = time.monotonic() + seconds
+        if action not in {"happy", "happy_right"}:
+            self.happy_start = None
         self.draw()
 
     def pet_anchor(self) -> tuple[int, int]:
@@ -248,7 +289,9 @@ class RigDesktopCatApp:
         self.bubble.show(text, *self.pet_anchor())
 
     def happy(self) -> None:
-        self.set_action("happy", 2.0)
+        self.happy_direction = self.next_horizontal_direction()
+        self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
+        self.set_action(self.happy_action_for_direction(self.happy_direction), 2.0)
         self.say(TEXT["happy"])
 
     def cute(self) -> None:
@@ -264,34 +307,66 @@ class RigDesktopCatApp:
         self.say(TEXT["sleep"])
 
     def walk_right(self) -> None:
-        self.walk_direction = 1
-        self.set_action("walk", 1.8)
+        self.walk_direction = self.next_horizontal_direction(1)
+        self.set_action("walk" if self.walk_direction > 0 else "walk_left", 1.8)
         self.say(TEXT["walk_right"])
 
     def walk_left(self) -> None:
-        self.walk_direction = -1
-        self.set_action("walk_left", 1.8)
+        self.walk_direction = self.next_horizontal_direction(-1)
+        self.set_action("walk_left" if self.walk_direction < 0 else "walk", 1.8)
         self.say(TEXT["walk_left"])
 
     def walk(self) -> None:
-        if random.choice([True, False]):
+        direction = self.next_horizontal_direction(random.choice([-1, 1]))
+        if direction > 0:
             self.walk_right()
         else:
             self.walk_left()
+
+    def next_horizontal_direction(self, preferred: int | None = None) -> int:
+        current_x = self.root.winfo_x()
+        max_x = self.root.winfo_screenwidth() - WIDTH - SCREEN_MARGIN
+        return bounded_walk_direction(
+            current_x,
+            SCREEN_MARGIN,
+            max_x,
+            preferred if preferred is not None else random.choice([-1, 1]),
+        )
+
+    def happy_action_for_direction(self, direction: int) -> str:
+        return "happy_right" if direction > 0 else "happy"
 
     def advance_walk(self) -> None:
         current_x = self.root.winfo_x()
         y = self.root.winfo_y()
         max_x = self.root.winfo_screenwidth() - WIDTH - SCREEN_MARGIN
+        self.walk_direction = bounded_walk_direction(current_x, SCREEN_MARGIN, max_x, self.walk_direction)
+        self.action = "walk_left" if self.walk_direction < 0 else "walk"
         x = next_walk_x(current_x, self.walk_direction, SCREEN_MARGIN, max_x)
+        self.root.geometry(f"+{x}+{y}")
+        self.bubble.move_to_pet(x + WIDTH // 2, y + (HEIGHT - DISPLAY_SIZE) // 2)
+
+    def advance_happy(self) -> None:
+        if self.happy_start is None:
+            self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
+        start_x, start_y = self.happy_start
+        max_x = self.root.winfo_screenwidth() - WIDTH - SCREEN_MARGIN
+        self.happy_direction = bounded_walk_direction(start_x, SCREEN_MARGIN, max_x, self.happy_direction)
+        self.action = self.happy_action_for_direction(self.happy_direction)
+        phase = min(1.0, self.frame / max(1, self.action_frame_count() - 1))
+        hop = math.sin(math.pi * phase)
+        x = max(SCREEN_MARGIN, min(max_x, start_x + round(self.happy_direction * HAPPY_STEP_PX * self.frame)))
+        y = max(SCREEN_MARGIN, start_y - round(HAPPY_HOP_PX * hop))
         self.root.geometry(f"+{x}+{y}")
         self.bubble.move_to_pet(x + WIDTH // 2, y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def on_press(self, event) -> None:
         self.drag_start = (event.x_root, event.y_root)
         self.window_start = (self.root.winfo_x(), self.root.winfo_y())
+        self.press_action = self.action
+        self.drag_moved = False
         if self.action in {"sleep", "sleep_in"}:
-            self.set_action("wake", 1.2)
+            self.set_action("wake", 4.0)
             self.say(TEXT["wake"])
         else:
             self.set_action("clicked", 1.4)
@@ -300,6 +375,7 @@ class RigDesktopCatApp:
     def on_drag(self, event) -> None:
         if not self.drag_start or not self.window_start:
             return
+        self.drag_moved = True
         self.action = "drag"
         dx = event.x_root - self.drag_start[0]
         dy = event.y_root - self.drag_start[1]
@@ -309,9 +385,15 @@ class RigDesktopCatApp:
         self.bubble.move_to_pet(x + WIDTH // 2, y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def on_release(self, _event) -> None:
+        press_action = self.press_action
+        drag_moved = self.drag_moved
         self.drag_start = None
         self.window_start = None
+        self.press_action = None
+        self.drag_moved = False
         self.store.update_position(self.root.winfo_x(), self.root.winfo_y())
+        if not drag_moved and press_action in {"sleep", "sleep_in"} and self.action == "wake":
+            return
         self.set_action("idle", 1.0)
 
     def on_menu(self, event) -> None:

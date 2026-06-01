@@ -1,0 +1,12 @@
+{
+  "sheet": "assets\\production\\desktop_cat\\batches\\20260527_motion_quality_v1\\pose_sheets\\sleep_in_24poses_v2_chromakey.png",
+  "keypose_count": 28,
+  "action": "sleep_in",
+  "frames": 28,
+  "mirror_action": null,
+  "resample": false,
+  "component_extract": true,
+  "component_limit": 28,
+  "target_extent": 300,
+  "note": "Generated from real redrawn keyposes; still requires visual QA and may need hand or AI in-betweens."
+}
