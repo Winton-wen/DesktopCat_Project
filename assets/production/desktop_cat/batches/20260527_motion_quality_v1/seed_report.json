@@ -1,0 +1,13 @@
+{
+  "source": "E:\\Project\\DesktopPig_Project\\assets\\sprites",
+  "target": "assets\\production\\desktop_cat\\batches\\20260527_motion_quality_v1\\clean",
+  "actions": {
+    "idle": 16,
+    "blink": 10,
+    "wave": 17,
+    "clicked": 9,
+    "sleep": 11,
+    "drag": 8
+  },
+  "purpose": "Seed candidate batch with protected stable baseline frames for comparison and controlled replacement."
+}

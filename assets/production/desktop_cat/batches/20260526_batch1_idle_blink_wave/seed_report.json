@@ -1,0 +1,11 @@
+{
+  "source": "E:\\Project\\DesktopPig_Project\\assets\\sprites",
+  "target": "assets\\production\\desktop_cat\\batches\\20260526_batch1_idle_blink_wave\\clean",
+  "actions": {
+    "sleep_in": 11,
+    "wake": 11,
+    "walk": 14,
+    "walk_left": 14
+  },
+  "purpose": "Seed candidate batch with protected stable baseline frames for comparison and controlled replacement."
+}

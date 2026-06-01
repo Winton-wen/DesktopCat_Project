@@ -1,0 +1,48 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.petvenv/
+
+# Build and packaging outputs
+build/
+dist/
+*.spec
+*.log
+
+# DesktopCat runtime smoke-test state
+desktopcat_smoke_config*/
+
+# Local backups and large packaged snapshots
+backups/
+*.zip
+*.7z
+*.rar
+
+# Generated QA previews and comparison artifacts
+assets/qa/
+assets/production/desktop_cat/qa/
+assets/production/desktop_cat/batches/*/qa/import_backups/
+assets/production/desktop_cat/batches/*/qa/*.json
+
+# Local sprite rollback folders created during visual experiments
+*_before_synth/
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Secrets and local env files
+.env
+.env.*
+!.env.example

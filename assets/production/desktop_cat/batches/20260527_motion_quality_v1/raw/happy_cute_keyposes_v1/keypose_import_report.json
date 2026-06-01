@@ -1,0 +1,7 @@
+{
+  "sheet": "assets\\production\\desktop_cat\\batches\\20260527_motion_quality_v1\\pose_sheets\\happy_cute_keyposes_v1_chromakey.png",
+  "keypose_count": 12,
+  "happy_frames": 48,
+  "cute_frames": 44,
+  "note": "Generated from real redrawn keyposes; still requires visual QA and may need hand or AI in-betweens."
+}

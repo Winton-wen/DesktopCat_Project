@@ -1,0 +1,508 @@
+{
+  "name": "desktop_cat_pseudo_live2d_v1",
+  "source_image": "assets/sprites/idle/00.png",
+  "canvas_size": [
+    512,
+    512
+  ],
+  "notes": [
+    "Initial source-derived layered rig for QA preview only.",
+    "Current sprite runtime remains the production fallback."
+  ],
+  "parts": [
+    {
+      "name": "tail_01",
+      "file": "tail_01.png",
+      "parent": null,
+      "pivot": [
+        12,
+        140
+      ],
+      "position": [
+        354,
+        278
+      ],
+      "z_index": 5,
+      "scale": 1.0,
+      "rotation_limit": [
+        -18,
+        18
+      ]
+    },
+    {
+      "name": "tail_02",
+      "file": "tail_02.png",
+      "parent": "tail_01",
+      "pivot": [
+        18,
+        92
+      ],
+      "position": [
+        360,
+        278
+      ],
+      "z_index": 6,
+      "scale": 1.0,
+      "rotation_limit": [
+        -20,
+        20
+      ]
+    },
+    {
+      "name": "tail_03",
+      "file": "tail_03.png",
+      "parent": "tail_02",
+      "pivot": [
+        23,
+        62
+      ],
+      "position": [
+        358,
+        269
+      ],
+      "z_index": 7,
+      "scale": 1.0,
+      "rotation_limit": [
+        -24,
+        24
+      ]
+    },
+    {
+      "name": "body",
+      "file": "body.png",
+      "parent": null,
+      "pivot": [
+        115,
+        238
+      ],
+      "position": [
+        137,
+        226
+      ],
+      "z_index": 10,
+      "scale": 1.0,
+      "rotation_limit": [
+        -6,
+        6
+      ]
+    },
+    {
+      "name": "paw_back_left",
+      "file": "paw_back_left.png",
+      "parent": "body",
+      "pivot": [
+        42,
+        88
+      ],
+      "position": [
+        104,
+        376
+      ],
+      "z_index": 16,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "paw_back_right",
+      "file": "paw_back_right.png",
+      "parent": "body",
+      "pivot": [
+        38,
+        88
+      ],
+      "position": [
+        285,
+        376
+      ],
+      "z_index": 16,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "head",
+      "file": "head.png",
+      "parent": null,
+      "pivot": [
+        160,
+        196
+      ],
+      "position": [
+        96,
+        56
+      ],
+      "z_index": 30,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "ear_left",
+      "file": "ear_left.png",
+      "parent": "head",
+      "pivot": [
+        60,
+        83
+      ],
+      "position": [
+        105,
+        62
+      ],
+      "z_index": 34,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "ear_right",
+      "file": "ear_right.png",
+      "parent": "head",
+      "pivot": [
+        25,
+        83
+      ],
+      "position": [
+        312,
+        62
+      ],
+      "z_index": 34,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "eye_left",
+      "file": "eye_left.png",
+      "parent": "head",
+      "pivot": [
+        24,
+        30
+      ],
+      "position": [
+        156,
+        160
+      ],
+      "z_index": 45,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "eye_right",
+      "file": "eye_right.png",
+      "parent": "head",
+      "pivot": [
+        24,
+        30
+      ],
+      "position": [
+        258,
+        160
+      ],
+      "z_index": 45,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "eyelid_left",
+      "file": "eyelid_left.png",
+      "parent": "head",
+      "pivot": [
+        58,
+        50
+      ],
+      "position": [
+        120,
+        135
+      ],
+      "z_index": 48,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "eyelid_right",
+      "file": "eyelid_right.png",
+      "parent": "head",
+      "pivot": [
+        58,
+        50
+      ],
+      "position": [
+        230,
+        135
+      ],
+      "z_index": 48,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "mouth_open",
+      "file": "mouth_open.png",
+      "parent": "head",
+      "pivot": [
+        28,
+        35
+      ],
+      "position": [
+        218,
+        205
+      ],
+      "z_index": 49,
+      "scale": 1.0,
+      "rotation_limit": [
+        -6,
+        6
+      ]
+    },
+    {
+      "name": "paw_front_left",
+      "file": "paw_front_left.png",
+      "parent": "body",
+      "pivot": [
+        28,
+        151
+      ],
+      "position": [
+        178,
+        324
+      ],
+      "z_index": 38,
+      "scale": 1.0,
+      "rotation_limit": [
+        -16,
+        16
+      ]
+    },
+    {
+      "name": "paw_front_right",
+      "file": "paw_front_right.png",
+      "parent": "body",
+      "pivot": [
+        29,
+        151
+      ],
+      "position": [
+        235,
+        324
+      ],
+      "z_index": 38,
+      "scale": 1.0,
+      "rotation_limit": [
+        -16,
+        16
+      ]
+    },
+    {
+      "name": "paw_wave_right",
+      "file": "paw_wave_right.png",
+      "parent": "body",
+      "pivot": [
+        48,
+        126
+      ],
+      "position": [
+        66,
+        168
+      ],
+      "z_index": 58,
+      "scale": 1.0,
+      "rotation_limit": [
+        -28,
+        28
+      ]
+    },
+    {
+      "name": "bow_left",
+      "file": "bow_left.png",
+      "parent": "body",
+      "pivot": [
+        88,
+        45
+      ],
+      "position": [
+        135,
+        257
+      ],
+      "z_index": 50,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "bow_right",
+      "file": "bow_right.png",
+      "parent": "body",
+      "pivot": [
+        10,
+        45
+      ],
+      "position": [
+        234,
+        257
+      ],
+      "z_index": 50,
+      "scale": 1.0,
+      "rotation_limit": [
+        -12,
+        12
+      ]
+    },
+    {
+      "name": "bow_center",
+      "file": "bow_center.png",
+      "parent": "body",
+      "pivot": [
+        21,
+        25
+      ],
+      "position": [
+        219,
+        268
+      ],
+      "z_index": 52,
+      "scale": 1.0,
+      "rotation_limit": [
+        -8,
+        8
+      ]
+    },
+    {
+      "name": "bell",
+      "file": "bell.png",
+      "parent": "bow_center",
+      "pivot": [
+        14,
+        11
+      ],
+      "position": [
+        225,
+        271
+      ],
+      "z_index": 54,
+      "scale": 1.0,
+      "rotation_limit": [
+        -20,
+        20
+      ]
+    },
+    {
+      "name": "pose_wave",
+      "file": "pose_wave.png",
+      "parent": null,
+      "pivot": [
+        256,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "z_index": 90,
+      "scale": 1.0,
+      "rotation_limit": [
+        -6,
+        6
+      ]
+    },
+    {
+      "name": "pose_clicked",
+      "file": "pose_clicked.png",
+      "parent": null,
+      "pivot": [
+        256,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "z_index": 90,
+      "scale": 1.0,
+      "rotation_limit": [
+        -6,
+        6
+      ]
+    },
+    {
+      "name": "pose_happy",
+      "file": "pose_happy.png",
+      "parent": null,
+      "pivot": [
+        256,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "z_index": 90,
+      "scale": 1.0,
+      "rotation_limit": [
+        -8,
+        8
+      ]
+    },
+    {
+      "name": "pose_sleep",
+      "file": "pose_sleep.png",
+      "parent": null,
+      "pivot": [
+        256,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "z_index": 90,
+      "scale": 1.0,
+      "rotation_limit": [
+        -4,
+        4
+      ]
+    },
+    {
+      "name": "pose_drag",
+      "file": "pose_drag.png",
+      "parent": null,
+      "pivot": [
+        256,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "z_index": 90,
+      "scale": 1.0,
+      "rotation_limit": [
+        -8,
+        8
+      ]
+    }
+  ]
+}

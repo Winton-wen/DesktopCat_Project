@@ -1,0 +1,60 @@
+{
+  "character_id": "desktop_cat",
+  "protected_baseline": "stable_v2_baseline",
+  "target_quality": "qq_pet_like_polished_sprite_first",
+  "frame_standard": {
+    "format": "png",
+    "mode": "RGBA",
+    "canvas_size": [512, 512],
+    "transparent_corners": true,
+    "source_of_truth_before_runtime": "assets/production/desktop_cat/batches"
+  },
+  "acceptance_gates": [
+    "no_identity_drift",
+    "bow_and_bell_present",
+    "transparent_background",
+    "no_cropped_body_parts",
+    "same_canvas_size",
+    "stable_scale_and_baseline",
+    "idle_compatible_first_last_frames",
+    "visual_contact_sheet_reviewed",
+    "motion_gif_reviewed"
+  ],
+  "actions": {
+    "idle": {"frames": 16, "fps": 10, "loop": true},
+    "blink": {"frames": 10, "fps": 10, "loop": false},
+    "wave": {"frames": 17, "fps": 14, "loop": false},
+    "clicked": {"frames": 9, "fps": 14, "loop": false},
+    "happy": {"frames": 48, "fps": 24, "loop": false},
+    "sleep_in": {"frames": 11, "fps": 10, "loop": false},
+    "sleep": {"frames": 11, "fps": 8, "loop": true},
+    "wake": {"frames": 11, "fps": 10, "loop": false},
+    "walk": {"frames": 14, "fps": 14, "loop": false},
+    "walk_left": {"frames": 14, "fps": 14, "loop": false},
+    "cute": {"frames": 44, "fps": 24, "loop": false},
+    "drag": {"frames": 8, "fps": 5, "loop": true}
+  },
+  "batches": [
+    {
+      "id": "stable_v2_baseline",
+      "status": "protected_baseline",
+      "source": "assets/sprites",
+      "qa_contact_sheet": "assets/qa/stable/stable_sprite_contact_sheet.png",
+      "notes": "Current reliable full-frame sprite route. Do not overwrite without a better audited batch."
+    },
+    {
+      "id": "20260526_batch1_idle_blink_wave",
+      "status": "planned",
+      "source": "assets/production/desktop_cat/batches/20260526_batch1_idle_blink_wave/clean",
+      "qa_contact_sheet": "assets/production/desktop_cat/qa/20260526_batch1_idle_blink_wave/contact_sheet.png",
+      "notes": "Playable candidate batch with all current baseline actions. Motion quality is not final."
+    },
+    {
+      "id": "20260527_motion_quality_v1",
+      "status": "planned",
+      "source": "assets/production/desktop_cat/batches/20260527_motion_quality_v1/clean",
+      "qa_contact_sheet": "assets/production/desktop_cat/qa/20260527_motion_quality_v1/contact_sheet.png",
+      "notes": "Dedicated replacement batch for QQ-pet-quality happy, sleep_in, wake, walk, and walk_left motion."
+    }
+  ]
+}
