@@ -45,7 +45,7 @@ class ProductionPipelineTests(unittest.TestCase):
         self.assertEqual(48, manifest["actions"]["happy"]["frames"])
         self.assertEqual(44, manifest["actions"]["cute"]["frames"])
         self.assertEqual(99, manifest["actions"]["sleep_in"]["frames"])
-        self.assertEqual(96, manifest["actions"]["wake"]["frames"])
+        self.assertEqual(80, manifest["actions"]["wake"]["frames"])
         self.assertEqual(16, manifest["actions"]["walk"]["frames"])
         self.assertEqual(16, manifest["actions"]["walk_left"]["frames"])
         self.assertEqual(24, manifest["actions"]["happy"]["fps"])

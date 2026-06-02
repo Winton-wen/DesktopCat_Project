@@ -34,11 +34,18 @@ def action_specs_for_batch(manifest: dict, batch: dict, requested: list[str] | N
     return specs
 
 
+def frame_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        return (int(path.stem), path.name)
+    except ValueError:
+        return (10**9, path.name)
+
+
 def audit_frames(source: Path, actions: dict, canvas_size: tuple[int, int]) -> list[str]:
     errors: list[str] = []
     for action, spec in actions.items():
         folder = source / action
-        frames = sorted(folder.glob("*.png"))
+        frames = sorted(folder.glob("*.png"), key=frame_sort_key)
         expected_count = int(spec["frames"])
         if len(frames) != expected_count:
             errors.append(f"{action}: expected {expected_count} png frames, found {len(frames)}")

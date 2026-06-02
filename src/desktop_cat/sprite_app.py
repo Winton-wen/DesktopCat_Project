@@ -38,6 +38,13 @@ TEXT = {
     "auto_off": "\u597d\u5440\uff0c\u6211\u5148\u4e0d\u81ea\u542f\u3002",
 }
 
+
+def frame_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        return (int(path.stem), path.name)
+    except ValueError:
+        return (10**9, path.name)
+
 MENU = {
     "toggle": "\u663e\u793a/\u9690\u85cf",
     "happy": "\u5f00\u5fc3\u4e00\u4e0b",
@@ -124,7 +131,7 @@ class SpriteLoader:
         for action in ACTIONS:
             folder = self.root / action.name
             images = []
-            for path in sorted(folder.glob("*.png")):
+            for path in sorted(folder.glob("*.png"), key=frame_sort_key):
                 img = Image.open(path).convert("RGBA")
                 img.thumbnail((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
                 images.append(ImageTk.PhotoImage(img))
@@ -220,7 +227,7 @@ class DesktopCatApp:
         if self.action in {"walk", "walk_left"} and not self.drag_start and not self.hidden:
             self.step_walk()
         self.draw()
-        delay = max(42, round(1000 / ACTION_FPS.get(self.action, 12)))
+        delay = max(16, round(1000 / ACTION_FPS.get(self.action, 12)))
         self.root.after(delay, self.tick)
 
     def advance_idle_state(self, now: float) -> None:

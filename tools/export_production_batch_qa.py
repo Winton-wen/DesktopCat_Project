@@ -23,8 +23,15 @@ def find_batch(manifest: dict, batch_id: str) -> dict:
     raise SystemExit(f"Unknown production batch: {batch_id}")
 
 
+def frame_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        return (int(path.stem), path.name)
+    except ValueError:
+        return (10**9, path.name)
+
+
 def load_action_frames(source: Path, action: str) -> list[Image.Image]:
-    paths = sorted((source / action).glob("*.png"))
+    paths = sorted((source / action).glob("*.png"), key=frame_sort_key)
     return [Image.open(path).convert("RGBA") for path in paths]
 
 

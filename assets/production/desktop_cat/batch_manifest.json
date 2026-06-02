@@ -28,7 +28,7 @@
     "happy": {"frames": 48, "fps": 24, "loop": false},
     "sleep_in": {"frames": 99, "fps": 24, "loop": false},
     "sleep": {"frames": 11, "fps": 8, "loop": true},
-    "wake": {"frames": 96, "fps": 24, "loop": false},
+    "wake": {"frames": 80, "fps": 32, "loop": false},
     "walk": {"frames": 16, "fps": 14, "loop": false},
     "walk_left": {"frames": 16, "fps": 14, "loop": false},
     "cute": {"frames": 44, "fps": 24, "loop": false},

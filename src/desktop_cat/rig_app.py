@@ -31,7 +31,7 @@ ACTION_FPS = {
     "happy_right": 24,
     "sleep_in": 24,
     "sleep": 8,
-    "wake": 24,
+    "wake": 32,
     "walk": 14,
     "walk_left": 14,
     "cute": 24,
@@ -54,6 +54,13 @@ TEXT = {
     "walk_left": "\u6211\u5f80\u5de6\u8d70\u4e24\u6b65\u3002",
     "walk_right": "\u6211\u5f80\u53f3\u8d70\u4e24\u6b65\u3002",
 }
+
+
+def frame_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        return (int(path.stem), path.name)
+    except ValueError:
+        return (10**9, path.name)
 
 
 def next_walk_x(current_x: int, direction: int, min_x: int, max_x: int, step: int = WALK_STEP_PX) -> int:
@@ -88,7 +95,7 @@ class StableSpriteFrameSource:
         for action in ACTIONS:
             folder = self.root / action.name
             frames = []
-            for path in sorted(folder.glob("*.png")):
+            for path in sorted(folder.glob("*.png"), key=frame_sort_key):
                 image = Image.open(path).convert("RGBA")
                 image.thumbnail((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
                 frames.append(ImageTk.PhotoImage(image))
@@ -118,7 +125,7 @@ class ProductionBatchFrameSource(StableSpriteFrameSource):
             if not folder.is_dir() or folder.name in self.frames:
                 continue
             frames = []
-            for path in sorted(folder.glob("*.png")):
+            for path in sorted(folder.glob("*.png"), key=frame_sort_key):
                 image = Image.open(path).convert("RGBA")
                 image.thumbnail((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
                 frames.append(ImageTk.PhotoImage(image))
@@ -234,7 +241,7 @@ class RigDesktopCatApp:
             "cute": 44,
             "sleep_in": 99,
             "sleep": 11,
-            "wake": 96,
+            "wake": 80,
             "walk": 16,
             "walk_left": 16,
             "wave": 17,
@@ -259,7 +266,7 @@ class RigDesktopCatApp:
         elif self.action in {"walk", "walk_left"} and not self.drag_start:
             self.advance_walk()
         self.draw()
-        self.root.after(max(42, round(1000 / ACTION_FPS.get(self.action, 12))), self.tick)
+        self.root.after(max(16, round(1000 / ACTION_FPS.get(self.action, 12))), self.tick)
 
     def random_idle_action(self, now: float) -> None:
         action = random.choices(["idle", "blink", "wave", "happy", "cute", "sleep_in", "walk"], weights=[58, 22, 5, 5, 4, 2, 4], k=1)[0]
