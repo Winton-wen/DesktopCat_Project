@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -154,6 +155,31 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertIn('"cute"', app_source)
         self.assertIn("卖萌一下", menu_source)
         self.assertIn("self.set_action(\"cute\"", app_source)
+
+    def test_candidate_speech_bubble_sits_close_to_pet_head(self) -> None:
+        from desktop_cat import rig_app
+
+        _x, y = rig_app.speech_bubble_geometry(
+            screen_w=1024,
+            pet_center_x=500,
+            pet_top_y=300,
+            bubble_w=160,
+            bubble_h=50,
+        )
+        self.assertEqual(300 - 50 + rig_app.SPEECH_BUBBLE_PET_OVERLAP_PX, y)
+
+    def test_sprite_speech_bubble_sits_close_to_pet_head(self) -> None:
+        sys.modules.setdefault("pystray", types.ModuleType("pystray"))
+        from desktop_cat import sprite_app
+
+        _x, y = sprite_app.speech_bubble_geometry(
+            screen_w=1024,
+            pet_center_x=500,
+            pet_top_y=300,
+            bubble_w=160,
+            bubble_h=70,
+        )
+        self.assertEqual(300 - 70 + sprite_app.SPEECH_BUBBLE_PET_OVERLAP_PX, y)
 
 
 if __name__ == "__main__":

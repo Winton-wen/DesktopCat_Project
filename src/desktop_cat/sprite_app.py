@@ -22,6 +22,7 @@ TRANSPARENT = "#fff7f0"
 WIDTH = 280
 HEIGHT = 240
 DISPLAY_SIZE = 150
+SPEECH_BUBBLE_PET_OVERLAP_PX = 40
 ACTION_FPS = {action.name: action.fps for action in ACTIONS}
 LOOPING_ACTIONS = {"idle", "sleep", "walk", "walk_left", "drag"}
 
@@ -44,6 +45,19 @@ def frame_sort_key(path: Path) -> tuple[int, str]:
         return (int(path.stem), path.name)
     except ValueError:
         return (10**9, path.name)
+
+
+def speech_bubble_geometry(
+    screen_w: int,
+    pet_center_x: int,
+    pet_top_y: int,
+    bubble_w: int,
+    bubble_h: int,
+) -> tuple[int, int]:
+    x = max(8, min(pet_center_x - bubble_w // 2, screen_w - bubble_w - 8))
+    y = max(8, pet_top_y - bubble_h + SPEECH_BUBBLE_PET_OVERLAP_PX)
+    return x, y
+
 
 MENU = {
     "toggle": "\u663e\u793a/\u9690\u85cf",
@@ -109,10 +123,13 @@ class SpeechBubble:
         self.after_id = self.root.after(4200, self.window.withdraw)
 
     def geometry_for_pet(self, pet_center_x: int, pet_top_y: int) -> tuple[int, int]:
-        screen_w = self.root.winfo_screenwidth()
-        x = max(8, min(pet_center_x - self.canvas_w // 2, screen_w - self.canvas_w - 8))
-        y = max(8, pet_top_y - self.canvas_h + 8)
-        return x, y
+        return speech_bubble_geometry(
+            self.root.winfo_screenwidth(),
+            pet_center_x,
+            pet_top_y,
+            self.canvas_w,
+            self.canvas_h,
+        )
 
     def move_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
         if not self.window.winfo_viewable():

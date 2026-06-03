@@ -25,3 +25,25 @@ New art must enter this folder first. Do not copy new frames into
 `stable_v2_baseline` records the current stable full-frame sprite route. It is
 not a request to overwrite the baseline; it is the measuring stick for future
 quality.
+
+## Importing Action GIFs
+
+Animated GIFs can be used as an intake format, but runtime assets stay as
+auditable transparent PNG frames. Import a GIF into a candidate action with:
+
+```powershell
+python tools\import_production_action.py `
+  --batch-root assets\production\desktop_cat\batches\20260527_motion_quality_v1 `
+  --action wake `
+  --source-gif path\to\wake.gif `
+  --expected-count 80 `
+  --canvas-size 512x512
+```
+
+The importer backs up any existing action frames, writes normalized PNGs to
+`clean/<action>/`, and records `qa/import_report_<action>.json`. After importing,
+run focused QA before reviewing the motion:
+
+```powershell
+python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --actions wake
+```

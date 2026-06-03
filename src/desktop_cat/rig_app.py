@@ -22,6 +22,7 @@ WALK_STEP_PX = 4
 HAPPY_STEP_PX = 2
 HAPPY_HOP_PX = 14
 SCREEN_MARGIN = 8
+SPEECH_BUBBLE_PET_OVERLAP_PX = 40
 ACTION_FPS = {
     "idle": 12,
     "blink": 10,
@@ -81,6 +82,18 @@ def bounded_walk_direction(current_x: int, min_x: int, max_x: int, preferred: in
     if current_x >= max_x:
         return -1
     return -1 if preferred < 0 else 1
+
+
+def speech_bubble_geometry(
+    screen_w: int,
+    pet_center_x: int,
+    pet_top_y: int,
+    bubble_w: int,
+    bubble_h: int,
+) -> tuple[int, int]:
+    x = max(8, min(pet_center_x - bubble_w // 2, screen_w - bubble_w - 8))
+    y = max(8, pet_top_y - bubble_h + SPEECH_BUBBLE_PET_OVERLAP_PX)
+    return x, y
 
 
 class StableSpriteFrameSource:
@@ -165,9 +178,7 @@ class RigSpeechBubble:
         self.window.update_idletasks()
         w = self.window.winfo_reqwidth()
         h = self.window.winfo_reqheight()
-        screen_w = self.root.winfo_screenwidth()
-        x = max(8, min(pet_center_x - w // 2, screen_w - w - 8))
-        y = max(8, pet_top_y - h - 8)
+        x, y = speech_bubble_geometry(self.root.winfo_screenwidth(), pet_center_x, pet_top_y, w, h)
         self.window.geometry(f"+{x}+{y}")
         self.window.deiconify()
         self.window.lift()

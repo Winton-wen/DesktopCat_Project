@@ -466,6 +466,66 @@ class ProductionPipelineTests(unittest.TestCase):
             self.assertEqual(16, report["imported_count"])
             self.assertTrue(report["backup"])
 
+    def test_import_tool_can_replace_candidate_action_from_gif(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            batch_root = tmp_root / "batch"
+            source_gif = tmp_root / "blink.gif"
+            existing = batch_root / "clean" / "blink"
+            existing.mkdir(parents=True)
+
+            gif_frames = []
+            for index in range(3):
+                frame = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+                for x in range(220 + index * 4, 252 + index * 4):
+                    for y in range(230, 262):
+                        frame.putpixel((x, y), (255, 120, 80, 255))
+                gif_frames.append(frame)
+                frame.save(existing / f"{index:02d}.png")
+            gif_frames[0].save(
+                source_gif,
+                save_all=True,
+                append_images=gif_frames[1:],
+                duration=80,
+                loop=0,
+                disposal=2,
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tools" / "import_production_action.py"),
+                    "--batch-root",
+                    str(batch_root),
+                    "--action",
+                    "blink",
+                    "--source-gif",
+                    str(source_gif),
+                    "--expected-count",
+                    "3",
+                    "--canvas-size",
+                    "512x512",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertIn("production_action_import_ok", result.stdout)
+            imported = sorted((batch_root / "clean" / "blink").glob("*.png"))
+            self.assertEqual(["00.png", "01.png", "02.png"], [path.name for path in imported])
+            for path in imported:
+                with Image.open(path) as loaded:
+                    self.assertEqual((512, 512), loaded.size)
+                    self.assertEqual("RGBA", loaded.convert("RGBA").mode)
+            backups = list((batch_root / "qa" / "import_backups").glob("blink_*"))
+            self.assertEqual(1, len(backups))
+            report = json.loads((batch_root / "qa" / "import_report_blink.json").read_text(encoding="utf-8"))
+            self.assertEqual("gif", report["source_type"])
+            self.assertEqual(str(source_gif), report["source"])
+            self.assertEqual(3, report["imported_count"])
+
     def test_import_tool_rejects_wrong_frame_count_before_replacing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
