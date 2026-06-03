@@ -201,6 +201,7 @@ class RigDesktopCatApp:
         frame_source: StableSpriteFrameSource | None = None,
         frame_source_factory=None,
         title: str = "DesktopCat Stable Preview",
+        enable_time_reminders: bool = True,
     ) -> None:
         self.store = ConfigStore()
         self.root = tk.Tk()
@@ -237,7 +238,8 @@ class RigDesktopCatApp:
         self.place_initially()
         self.draw()
         self.root.after(120, self.tick)
-        self.root.after(1500, self.check_time_reminder)
+        if enable_time_reminders:
+            self.root.after(1500, self.check_time_reminder)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -450,8 +452,9 @@ StableDesktopCatApp = RigDesktopCatApp
 
 
 class CandidateDesktopCatApp(RigDesktopCatApp):
-    def __init__(self, batch_id: str) -> None:
+    def __init__(self, batch_id: str, enable_time_reminders: bool = True) -> None:
         super().__init__(
             frame_source_factory=lambda: ProductionBatchFrameSource(batch_id),
             title=f"DesktopCat Candidate Preview - {batch_id}",
+            enable_time_reminders=enable_time_reminders,
         )

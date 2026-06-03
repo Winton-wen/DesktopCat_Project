@@ -91,6 +91,12 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertIn("CandidateDesktopCatApp", launcher)
         self.assertIn("--smoke-ms", launcher)
 
+    def test_candidate_launcher_has_test_reminder_time_mode(self) -> None:
+        launcher = (ROOT / "candidate_launcher.py").read_text(encoding="utf-8")
+        self.assertIn("--test-reminder-time", launcher)
+        self.assertIn("enable_time_reminders=False", launcher)
+        self.assertIn("check_time_reminder(args.test_reminder_time)", launcher)
+
     def test_candidate_app_builds_frame_source_after_tk_root_exists(self) -> None:
         from desktop_cat import rig_app
 
