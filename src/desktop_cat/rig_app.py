@@ -25,6 +25,7 @@ HAPPY_STEP_PX = 2
 HAPPY_HOP_PX = 14
 SCREEN_MARGIN = 8
 SPEECH_BUBBLE_PET_OVERLAP_PX = 40
+DISMISS_BUTTON_GAP_PX = 6
 TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 ACTION_FPS = {
     "idle": 12,
@@ -99,6 +100,19 @@ def speech_bubble_geometry(
     return x, y
 
 
+def dismiss_button_geometry(
+    screen_w: int,
+    screen_h: int,
+    pet_center_x: int,
+    pet_top_y: int,
+    button_w: int,
+    button_h: int,
+) -> tuple[int, int]:
+    x = max(8, min(pet_center_x - button_w // 2, screen_w - button_w - 8))
+    y = max(8, min(pet_top_y + DISPLAY_SIZE + DISMISS_BUTTON_GAP_PX, screen_h - button_h - 8))
+    return x, y
+
+
 class StableSpriteFrameSource:
     asset_folder = "sprites"
 
@@ -162,6 +176,11 @@ class RigSpeechBubble:
         self.window.attributes("-topmost", True)
         self.window.configure(bg=TRANSPARENT)
         self.window.wm_attributes("-transparentcolor", TRANSPARENT)
+        self.button_window = tk.Toplevel(root)
+        self.button_window.withdraw()
+        self.button_window.overrideredirect(True)
+        self.button_window.attributes("-topmost", True)
+        self.button_window.configure(bg="#ffdce8")
         self.label = tk.Label(
             self.window,
             text="",
@@ -175,17 +194,25 @@ class RigSpeechBubble:
         )
         self.label.pack()
         self.button = tk.Button(
-            self.window,
+            self.button_window,
             text="",
-            bg="white",
-            fg="#111111",
+            bg="#ffdce8",
+            activebackground="#ffc7da",
+            fg="#6f2542",
+            activeforeground="#6f2542",
             font=("Microsoft YaHei UI", 9),
-            relief="solid",
-            bd=1,
-            padx=8,
-            pady=4,
+            relief="raised",
+            bd=2,
+            padx=12,
+            pady=5,
+            cursor="hand2",
         )
+        self.button.pack()
         self.after_id: str | None = None
+
+    def hide(self) -> None:
+        self.window.withdraw()
+        self.button_window.withdraw()
 
     def show(
         self,
@@ -200,12 +227,11 @@ class RigSpeechBubble:
         if button_text and button_command:
             def wrapped_command() -> None:
                 button_command()
-                self.window.withdraw()
+                self.hide()
 
             self.button.configure(text=button_text, command=wrapped_command)
-            self.button.pack(pady=(0, 8))
         else:
-            self.button.pack_forget()
+            self.button_window.withdraw()
         self.window.update_idletasks()
         w = self.window.winfo_reqwidth()
         h = self.window.winfo_reqheight()
@@ -213,9 +239,27 @@ class RigSpeechBubble:
         self.window.geometry(f"+{x}+{y}")
         self.window.deiconify()
         self.window.lift()
+        if button_text and button_command:
+            self.move_button_to_pet(pet_center_x, pet_top_y)
+            self.button_window.deiconify()
+            self.button_window.lift()
         if self.after_id:
             self.root.after_cancel(self.after_id)
-        self.after_id = self.root.after(hide_ms, self.window.withdraw)
+        self.after_id = self.root.after(hide_ms, self.hide)
+
+    def move_button_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
+        self.button_window.update_idletasks()
+        w = self.button_window.winfo_reqwidth()
+        h = self.button_window.winfo_reqheight()
+        x, y = dismiss_button_geometry(
+            self.root.winfo_screenwidth(),
+            self.root.winfo_screenheight(),
+            pet_center_x,
+            pet_top_y,
+            w,
+            h,
+        )
+        self.button_window.geometry(f"+{x}+{y}")
 
     def move_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
         if not self.window.winfo_viewable():
@@ -225,6 +269,8 @@ class RigSpeechBubble:
         h = self.window.winfo_reqheight()
         x, y = speech_bubble_geometry(self.root.winfo_screenwidth(), pet_center_x, pet_top_y, w, h)
         self.window.geometry(f"+{x}+{y}")
+        if self.button_window.winfo_viewable():
+            self.move_button_to_pet(pet_center_x, pet_top_y)
 
 
 class RigDesktopCatApp:

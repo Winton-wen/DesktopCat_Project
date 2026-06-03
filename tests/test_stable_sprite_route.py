@@ -188,6 +188,19 @@ class StableSpriteRouteTests(unittest.TestCase):
         )
         self.assertEqual(300 - 70 + sprite_app.SPEECH_BUBBLE_PET_OVERLAP_PX, y)
 
+    def test_dismiss_button_sits_below_pet_not_in_speech_bubble(self) -> None:
+        from desktop_cat import rig_app
+
+        _x, y = rig_app.dismiss_button_geometry(
+            screen_w=1024,
+            screen_h=768,
+            pet_center_x=500,
+            pet_top_y=300,
+            button_w=220,
+            button_h=32,
+        )
+        self.assertEqual(300 + rig_app.DISPLAY_SIZE + rig_app.DISMISS_BUTTON_GAP_PX, y)
+
     def test_time_reminders_match_requested_companion_windows(self) -> None:
         from desktop_cat.time_reminders import reminder_for_time
 

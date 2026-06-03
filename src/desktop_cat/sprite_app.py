@@ -25,6 +25,7 @@ WIDTH = 280
 HEIGHT = 240
 DISPLAY_SIZE = 150
 SPEECH_BUBBLE_PET_OVERLAP_PX = 40
+DISMISS_BUTTON_GAP_PX = 6
 TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 ACTION_FPS = {action.name: action.fps for action in ACTIONS}
 LOOPING_ACTIONS = {"idle", "sleep", "walk", "walk_left", "drag"}
@@ -62,6 +63,19 @@ def speech_bubble_geometry(
     return x, y
 
 
+def dismiss_button_geometry(
+    screen_w: int,
+    screen_h: int,
+    pet_center_x: int,
+    pet_top_y: int,
+    button_w: int,
+    button_h: int,
+) -> tuple[int, int]:
+    x = max(8, min(pet_center_x - button_w // 2, screen_w - button_w - 8))
+    y = max(8, min(pet_top_y + DISPLAY_SIZE + DISMISS_BUTTON_GAP_PX, screen_h - button_h - 8))
+    return x, y
+
+
 MENU = {
     "toggle": "\u663e\u793a/\u9690\u85cf",
     "happy": "\u5f00\u5fc3\u4e00\u4e0b",
@@ -84,23 +98,36 @@ class SpeechBubble:
         self.window.wm_attributes("-transparentcolor", TRANSPARENT)
         self.canvas = tk.Canvas(self.window, width=1, height=1, bg=TRANSPARENT, highlightthickness=0)
         self.canvas.pack()
+        self.button_window = tk.Toplevel(root)
+        self.button_window.withdraw()
+        self.button_window.overrideredirect(True)
+        self.button_window.attributes("-topmost", True)
+        self.button_window.configure(bg="#ffdce8")
         self.button = tk.Button(
-            self.window,
+            self.button_window,
             text="",
-            bg="white",
-            fg="#111111",
+            bg="#ffdce8",
+            activebackground="#ffc7da",
+            fg="#6f2542",
+            activeforeground="#6f2542",
             font=("Microsoft YaHei UI", 9),
-            relief="solid",
-            bd=1,
-            padx=8,
-            pady=4,
+            relief="raised",
+            bd=2,
+            padx=12,
+            pady=5,
+            cursor="hand2",
         )
+        self.button.pack()
         self.font = tkfont.Font(family="Microsoft YaHei UI", size=10)
         self.after_id: str | None = None
         self.canvas_w = 1
         self.canvas_h = 1
         self.window_w = 1
         self.window_h = 1
+
+    def hide(self) -> None:
+        self.window.withdraw()
+        self.button_window.withdraw()
 
     def show(
         self,
@@ -141,22 +168,25 @@ class SpeechBubble:
         if button_text and button_command:
             def wrapped_command() -> None:
                 button_command()
-                self.window.withdraw()
+                self.hide()
 
             self.button.configure(text=button_text, command=wrapped_command)
-            self.button.pack(pady=(0, 8))
         else:
-            self.button.pack_forget()
+            self.button_window.withdraw()
         self.window.update_idletasks()
-        self.window_w = max(self.canvas_w, self.window.winfo_reqwidth())
-        self.window_h = max(self.canvas_h, self.window.winfo_reqheight())
+        self.window_w = self.canvas_w
+        self.window_h = self.canvas_h
         x, y = self.geometry_for_pet(pet_center_x, pet_top_y)
         self.window.geometry(f"{self.window_w}x{self.window_h}+{x}+{y}")
         self.window.deiconify()
         self.window.lift()
+        if button_text and button_command:
+            self.move_button_to_pet(pet_center_x, pet_top_y)
+            self.button_window.deiconify()
+            self.button_window.lift()
         if self.after_id:
             self.root.after_cancel(self.after_id)
-        self.after_id = self.root.after(hide_ms, self.window.withdraw)
+        self.after_id = self.root.after(hide_ms, self.hide)
 
     def geometry_for_pet(self, pet_center_x: int, pet_top_y: int) -> tuple[int, int]:
         return speech_bubble_geometry(
@@ -167,11 +197,25 @@ class SpeechBubble:
             self.window_h,
         )
 
+    def move_button_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
+        self.button_window.update_idletasks()
+        x, y = dismiss_button_geometry(
+            self.root.winfo_screenwidth(),
+            self.root.winfo_screenheight(),
+            pet_center_x,
+            pet_top_y,
+            self.button_window.winfo_reqwidth(),
+            self.button_window.winfo_reqheight(),
+        )
+        self.button_window.geometry(f"+{x}+{y}")
+
     def move_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
         if not self.window.winfo_viewable():
             return
         x, y = self.geometry_for_pet(pet_center_x, pet_top_y)
         self.window.geometry(f"+{x}+{y}")
+        if self.button_window.winfo_viewable():
+            self.move_button_to_pet(pet_center_x, pet_top_y)
 
 
 class SpriteLoader:
