@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import time
+from datetime import datetime, time, timedelta
 
 
 @dataclass(frozen=True)
 class TimeReminder:
     key: str
     message: str
+
+
+TIME_REMINDER_REPEAT = timedelta(minutes=10)
 
 
 LUNCH_REMINDER = TimeReminder("lunch", "小猪猪要乖乖按时吃午饭哟！")
@@ -37,3 +40,22 @@ def reminder_for_time(current: time) -> TimeReminder | None:
     if _in_window(current, 1, 30, 5, 0):
         return LATE_NIGHT_REMINDER
     return None
+
+
+def reminder_instance_key(current: datetime, reminder: TimeReminder | None) -> str | None:
+    if reminder is None:
+        return None
+    return f"{current.date().isoformat()}:{reminder.key}"
+
+
+def reminder_is_due(
+    current: datetime,
+    reminder: TimeReminder | None,
+    last_shown_at: dict[str, datetime],
+    dismissed_keys: set[str],
+) -> bool:
+    key = reminder_instance_key(current, reminder)
+    if key is None or key in dismissed_keys:
+        return False
+    previous = last_shown_at.get(key)
+    return previous is None or current - previous >= TIME_REMINDER_REPEAT

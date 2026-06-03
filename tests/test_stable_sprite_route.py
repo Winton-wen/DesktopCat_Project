@@ -4,7 +4,7 @@ import inspect
 import sys
 import types
 import unittest
-from datetime import time
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
 from PIL import Image
@@ -201,6 +201,18 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(1, 30)).message)
         self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(4, 59)).message)
         self.assertIsNone(reminder_for_time(time(5, 0)))
+
+    def test_time_reminders_repeat_until_current_window_is_dismissed(self) -> None:
+        from desktop_cat.time_reminders import reminder_for_time, reminder_instance_key, reminder_is_due
+
+        current = datetime(2026, 6, 3, 11, 30)
+        reminder = reminder_for_time(current.time())
+        key = reminder_instance_key(current, reminder)
+        self.assertEqual("2026-06-03:lunch", key)
+        self.assertTrue(reminder_is_due(current, reminder, {}, set()))
+        self.assertFalse(reminder_is_due(current + timedelta(minutes=9, seconds=59), reminder, {key: current}, set()))
+        self.assertTrue(reminder_is_due(current + timedelta(minutes=10), reminder, {key: current}, set()))
+        self.assertFalse(reminder_is_due(current + timedelta(minutes=30), reminder, {key: current}, {key}))
 
 
 if __name__ == "__main__":

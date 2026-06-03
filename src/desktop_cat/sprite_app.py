@@ -17,7 +17,7 @@ from . import autostart
 from .config import ConfigStore
 from .paths import app_root
 from .sprite_manifest import ACTIONS
-from .time_reminders import reminder_for_time
+from .time_reminders import reminder_for_time, reminder_instance_key, reminder_is_due
 
 
 TRANSPARENT = "#fff7f0"
@@ -84,12 +84,33 @@ class SpeechBubble:
         self.window.wm_attributes("-transparentcolor", TRANSPARENT)
         self.canvas = tk.Canvas(self.window, width=1, height=1, bg=TRANSPARENT, highlightthickness=0)
         self.canvas.pack()
+        self.button = tk.Button(
+            self.window,
+            text="",
+            bg="white",
+            fg="#111111",
+            font=("Microsoft YaHei UI", 9),
+            relief="solid",
+            bd=1,
+            padx=8,
+            pady=4,
+        )
         self.font = tkfont.Font(family="Microsoft YaHei UI", size=10)
         self.after_id: str | None = None
         self.canvas_w = 1
         self.canvas_h = 1
+        self.window_w = 1
+        self.window_h = 1
 
-    def show(self, text: str, pet_center_x: int, pet_top_y: int) -> None:
+    def show(
+        self,
+        text: str,
+        pet_center_x: int,
+        pet_top_y: int,
+        button_text: str | None = None,
+        button_command=None,
+        hide_ms: int = 4200,
+    ) -> None:
         padding_x = 18
         padding_y = 12
         tail_h = 22
@@ -102,8 +123,7 @@ class SpeechBubble:
         bubble_h = text_h + padding_y * 2 + border * 2
         self.canvas_w = bubble_w + 10
         self.canvas_h = bubble_h + tail_h + 8
-        x, y = self.geometry_for_pet(pet_center_x, pet_top_y)
-        tail_x = max(28, min(pet_center_x - x, self.canvas_w - 28))
+        tail_x = self.canvas_w // 2
 
         self.canvas.configure(width=self.canvas_w, height=self.canvas_h)
         c = self.canvas
@@ -118,20 +138,33 @@ class SpeechBubble:
         c.create_polygon(tail_x - 10, bottom - 1, tail_x + 10, bottom - 1, tail_x, bottom + tail_h, fill=fill, outline=outline, width=border)
         c.create_line(tail_x - 9, bottom, tail_x + 9, bottom, fill=fill, width=border + 1)
         c.create_text(self.canvas_w // 2, top + bubble_h // 2, text=text, width=text_w, fill="#111111", font=self.font, justify="center")
-        self.window.geometry(f"{self.canvas_w}x{self.canvas_h}+{x}+{y}")
+        if button_text and button_command:
+            def wrapped_command() -> None:
+                button_command()
+                self.window.withdraw()
+
+            self.button.configure(text=button_text, command=wrapped_command)
+            self.button.pack(pady=(0, 8))
+        else:
+            self.button.pack_forget()
+        self.window.update_idletasks()
+        self.window_w = max(self.canvas_w, self.window.winfo_reqwidth())
+        self.window_h = max(self.canvas_h, self.window.winfo_reqheight())
+        x, y = self.geometry_for_pet(pet_center_x, pet_top_y)
+        self.window.geometry(f"{self.window_w}x{self.window_h}+{x}+{y}")
         self.window.deiconify()
         self.window.lift()
         if self.after_id:
             self.root.after_cancel(self.after_id)
-        self.after_id = self.root.after(4200, self.window.withdraw)
+        self.after_id = self.root.after(hide_ms, self.window.withdraw)
 
     def geometry_for_pet(self, pet_center_x: int, pet_top_y: int) -> tuple[int, int]:
         return speech_bubble_geometry(
             self.root.winfo_screenwidth(),
             pet_center_x,
             pet_top_y,
-            self.canvas_w,
-            self.canvas_h,
+            self.window_w,
+            self.window_h,
         )
 
     def move_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
@@ -193,7 +226,8 @@ class DesktopCatApp:
         self.hidden = False
         self.direction = 1
         self.sleeping = False
-        self.time_reminders_shown: set[str] = set()
+        self.time_reminders_last_shown_at: dict[str, datetime] = {}
+        self.time_reminders_dismissed: set[str] = set()
         self.tray: pystray.Icon | None = None
 
         self.canvas.bind("<ButtonPress-1>", self.on_press)
@@ -335,12 +369,25 @@ class DesktopCatApp:
     def check_time_reminder(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
         reminder = reminder_for_time(current.time())
-        if reminder and not self.hidden:
-            reminder_key = f"{current.date().isoformat()}:{reminder.key}"
-            if reminder_key not in self.time_reminders_shown:
-                self.time_reminders_shown.add(reminder_key)
-                self.say(reminder.message)
+        reminder_key = reminder_instance_key(current, reminder)
+        if reminder_key and not self.hidden and reminder_is_due(
+            current,
+            reminder,
+            self.time_reminders_last_shown_at,
+            self.time_reminders_dismissed,
+        ):
+            self.time_reminders_last_shown_at[reminder_key] = current
+            self.bubble.show(
+                reminder.message,
+                *self.pet_anchor(),
+                button_text="谢谢小猫的关心，不用再提醒啦",
+                button_command=lambda key=reminder_key: self.dismiss_time_reminder(key),
+                hide_ms=30000,
+            )
         self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
+
+    def dismiss_time_reminder(self, reminder_key: str) -> None:
+        self.time_reminders_dismissed.add(reminder_key)
 
     def happy(self) -> None:
         self.set_action("happy", 3.2)

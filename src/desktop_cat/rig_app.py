@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 from .config import ConfigStore
 from .paths import app_root
 from .sprite_manifest import ACTIONS
-from .time_reminders import reminder_for_time
+from .time_reminders import reminder_for_time, reminder_instance_key, reminder_is_due
 
 
 TRANSPARENT = "#fff7f0"
@@ -174,10 +174,38 @@ class RigSpeechBubble:
             relief="solid",
         )
         self.label.pack()
+        self.button = tk.Button(
+            self.window,
+            text="",
+            bg="white",
+            fg="#111111",
+            font=("Microsoft YaHei UI", 9),
+            relief="solid",
+            bd=1,
+            padx=8,
+            pady=4,
+        )
         self.after_id: str | None = None
 
-    def show(self, text: str, pet_center_x: int, pet_top_y: int) -> None:
+    def show(
+        self,
+        text: str,
+        pet_center_x: int,
+        pet_top_y: int,
+        button_text: str | None = None,
+        button_command=None,
+        hide_ms: int = 3200,
+    ) -> None:
         self.label.configure(text=text)
+        if button_text and button_command:
+            def wrapped_command() -> None:
+                button_command()
+                self.window.withdraw()
+
+            self.button.configure(text=button_text, command=wrapped_command)
+            self.button.pack(pady=(0, 8))
+        else:
+            self.button.pack_forget()
         self.window.update_idletasks()
         w = self.window.winfo_reqwidth()
         h = self.window.winfo_reqheight()
@@ -187,12 +215,16 @@ class RigSpeechBubble:
         self.window.lift()
         if self.after_id:
             self.root.after_cancel(self.after_id)
-        self.after_id = self.root.after(3200, self.window.withdraw)
+        self.after_id = self.root.after(hide_ms, self.window.withdraw)
 
     def move_to_pet(self, pet_center_x: int, pet_top_y: int) -> None:
         if not self.window.winfo_viewable():
             return
-        self.show(self.label.cget("text"), pet_center_x, pet_top_y)
+        self.window.update_idletasks()
+        w = self.window.winfo_reqwidth()
+        h = self.window.winfo_reqheight()
+        x, y = speech_bubble_geometry(self.root.winfo_screenwidth(), pet_center_x, pet_top_y, w, h)
+        self.window.geometry(f"+{x}+{y}")
 
 
 class RigDesktopCatApp:
@@ -227,7 +259,8 @@ class RigDesktopCatApp:
         self.walk_direction = 1
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
-        self.time_reminders_shown: set[str] = set()
+        self.time_reminders_last_shown_at: dict[str, datetime] = {}
+        self.time_reminders_dismissed: set[str] = set()
 
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
@@ -316,12 +349,25 @@ class RigDesktopCatApp:
     def check_time_reminder(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
         reminder = reminder_for_time(current.time())
-        if reminder:
-            reminder_key = f"{current.date().isoformat()}:{reminder.key}"
-            if reminder_key not in self.time_reminders_shown:
-                self.time_reminders_shown.add(reminder_key)
-                self.say(reminder.message)
+        reminder_key = reminder_instance_key(current, reminder)
+        if reminder_key and reminder_is_due(
+            current,
+            reminder,
+            self.time_reminders_last_shown_at,
+            self.time_reminders_dismissed,
+        ):
+            self.time_reminders_last_shown_at[reminder_key] = current
+            self.bubble.show(
+                reminder.message,
+                *self.pet_anchor(),
+                button_text="谢谢小猫的关心，不用再提醒啦",
+                button_command=lambda key=reminder_key: self.dismiss_time_reminder(key),
+                hide_ms=30000,
+            )
         self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
+
+    def dismiss_time_reminder(self, reminder_key: str) -> None:
+        self.time_reminders_dismissed.add(reminder_key)
 
     def happy(self) -> None:
         self.happy_direction = self.next_horizontal_direction()
