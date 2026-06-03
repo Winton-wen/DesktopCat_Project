@@ -5,6 +5,7 @@ import math
 import time
 import tkinter as tk
 from tkinter import Menu
+from datetime import datetime
 from pathlib import Path
 
 from PIL import Image, ImageTk
@@ -12,6 +13,7 @@ from PIL import Image, ImageTk
 from .config import ConfigStore
 from .paths import app_root
 from .sprite_manifest import ACTIONS
+from .time_reminders import reminder_for_time
 
 
 TRANSPARENT = "#fff7f0"
@@ -23,6 +25,7 @@ HAPPY_STEP_PX = 2
 HAPPY_HOP_PX = 14
 SCREEN_MARGIN = 8
 SPEECH_BUBBLE_PET_OVERLAP_PX = 40
+TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 ACTION_FPS = {
     "idle": 12,
     "blink": 10,
@@ -223,6 +226,7 @@ class RigDesktopCatApp:
         self.walk_direction = 1
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
+        self.time_reminders_shown: set[str] = set()
 
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
@@ -233,6 +237,7 @@ class RigDesktopCatApp:
         self.place_initially()
         self.draw()
         self.root.after(120, self.tick)
+        self.root.after(1500, self.check_time_reminder)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -305,6 +310,16 @@ class RigDesktopCatApp:
 
     def say(self, text: str) -> None:
         self.bubble.show(text, *self.pet_anchor())
+
+    def check_time_reminder(self, now: datetime | None = None) -> None:
+        current = now or datetime.now()
+        reminder = reminder_for_time(current.time())
+        if reminder:
+            reminder_key = f"{current.date().isoformat()}:{reminder.key}"
+            if reminder_key not in self.time_reminders_shown:
+                self.time_reminders_shown.add(reminder_key)
+                self.say(reminder.message)
+        self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
 
     def happy(self) -> None:
         self.happy_direction = self.next_horizontal_direction()

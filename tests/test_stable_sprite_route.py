@@ -4,6 +4,7 @@ import inspect
 import sys
 import types
 import unittest
+from datetime import time
 from pathlib import Path
 
 from PIL import Image
@@ -180,6 +181,20 @@ class StableSpriteRouteTests(unittest.TestCase):
             bubble_h=70,
         )
         self.assertEqual(300 - 70 + sprite_app.SPEECH_BUBBLE_PET_OVERLAP_PX, y)
+
+    def test_time_reminders_match_requested_companion_windows(self) -> None:
+        from desktop_cat.time_reminders import reminder_for_time
+
+        self.assertEqual("小猪猪要乖乖按时吃午饭哟！", reminder_for_time(time(11, 30)).message)
+        self.assertEqual("小猪猪要乖乖按时吃午饭哟！", reminder_for_time(time(13, 29)).message)
+        self.assertIsNone(reminder_for_time(time(13, 30)))
+        self.assertEqual("小猪猪要乖乖按时吃晚饭哟！", reminder_for_time(time(17, 0)).message)
+        self.assertEqual("小猪猪要乖乖按时吃晚饭哟！", reminder_for_time(time(18, 59)).message)
+        self.assertEqual("要早点休息呀小猪猪", reminder_for_time(time(0, 0)).message)
+        self.assertEqual("要早点休息呀小猪猪", reminder_for_time(time(1, 29)).message)
+        self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(1, 30)).message)
+        self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(4, 59)).message)
+        self.assertIsNone(reminder_for_time(time(5, 0)))
 
 
 if __name__ == "__main__":

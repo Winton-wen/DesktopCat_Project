@@ -7,6 +7,7 @@ import time
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import Menu
+from datetime import datetime
 from typing import Callable
 
 from PIL import Image, ImageTk
@@ -16,6 +17,7 @@ from . import autostart
 from .config import ConfigStore
 from .paths import app_root
 from .sprite_manifest import ACTIONS
+from .time_reminders import reminder_for_time
 
 
 TRANSPARENT = "#fff7f0"
@@ -23,6 +25,7 @@ WIDTH = 280
 HEIGHT = 240
 DISPLAY_SIZE = 150
 SPEECH_BUBBLE_PET_OVERLAP_PX = 40
+TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 ACTION_FPS = {action.name: action.fps for action in ACTIONS}
 LOOPING_ACTIONS = {"idle", "sleep", "walk", "walk_left", "drag"}
 
@@ -190,6 +193,7 @@ class DesktopCatApp:
         self.hidden = False
         self.direction = 1
         self.sleeping = False
+        self.time_reminders_shown: set[str] = set()
         self.tray: pystray.Icon | None = None
 
         self.canvas.bind("<ButtonPress-1>", self.on_press)
@@ -204,6 +208,7 @@ class DesktopCatApp:
         self.root.after(1200, lambda: self.say(self.store.config.pet_name + TEXT["arrive"]))
         self.root.after(120, self.tick)
         self.root.after(30000, self.random_message)
+        self.root.after(1500, self.check_time_reminder)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -326,6 +331,16 @@ class DesktopCatApp:
 
     def say(self, text: str) -> None:
         self.bubble.show(text, *self.pet_anchor())
+
+    def check_time_reminder(self, now: datetime | None = None) -> None:
+        current = now or datetime.now()
+        reminder = reminder_for_time(current.time())
+        if reminder and not self.hidden:
+            reminder_key = f"{current.date().isoformat()}:{reminder.key}"
+            if reminder_key not in self.time_reminders_shown:
+                self.time_reminders_shown.add(reminder_key)
+                self.say(reminder.message)
+        self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
 
     def happy(self) -> None:
         self.set_action("happy", 3.2)
