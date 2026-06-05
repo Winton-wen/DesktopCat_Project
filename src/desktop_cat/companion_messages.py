@@ -94,6 +94,8 @@ def load_companion_pack(path: Path) -> CompanionMessagePack:
                 action=str(item.get("action") or "wave"),
             )
         )
+    if not messages:
+        raise ValueError(f"No valid companion messages in {path}")
     return CompanionMessagePack(messages=messages)
 
 

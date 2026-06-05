@@ -27,6 +27,7 @@ backups/
 *.rar
 
 # Generated QA previews and comparison artifacts
+qa_reports/
 assets/qa/
 assets/production/desktop_cat/qa/
 assets/production/desktop_cat/batches/*/qa/import_backups/

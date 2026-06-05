@@ -37,8 +37,8 @@ SPEECH_BUBBLE_PET_OVERLAP_PX = 60
 DISMISS_BUTTON_GAP_PX = 6
 TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 LOW_DISTRACTION_COMPANION_CHECK_MS = 60 * 60 * 1000
-RESET_JUMP_STEPS = 18
-RESET_JUMP_INTERVAL_MS = 24
+RESET_JUMP_STEPS = 48
+RESET_JUMP_INTERVAL_MS = 42
 RESET_JUMP_HOP_PX = 30
 ACTION_FPS = {
     "idle": 12,
@@ -140,6 +140,10 @@ def idle_action_choices(
     if rhythm == "evening":
         return EVENING_IDLE_ACTIONS, EVENING_IDLE_WEIGHTS
     return NORMAL_IDLE_ACTIONS, NORMAL_IDLE_WEIGHTS
+
+
+def reset_return_action(start_x: int, target_x: int) -> str:
+    return "happy_right" if target_x >= start_x else "happy"
 
 
 def low_distraction_menu_label(enabled: bool) -> str:
@@ -416,6 +420,7 @@ class RigDesktopCatApp:
         self.walk_direction = 1
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
+        self.resetting_position = False
         self.time_reminders_last_shown_at: dict[str, datetime] = {}
         self.time_reminders_dismissed: set[str] = set()
         self.companion_pack = self.load_configured_companion_pack()
@@ -486,9 +491,9 @@ class RigDesktopCatApp:
             self.action_until = now + random.uniform(1.2, 2.2)
         elif now > self.action_until and self.action == "idle" and not self.drag_start:
             self.random_idle_action(now)
-        if self.action in {"happy", "happy_right"} and not self.drag_start:
+        if self.action in {"happy", "happy_right"} and not self.drag_start and not self.resetting_position:
             self.advance_happy()
-        elif self.action in {"walk", "walk_left"} and not self.drag_start:
+        elif self.action in {"walk", "walk_left"} and not self.drag_start and not self.resetting_position:
             self.advance_walk()
         self.draw()
         self.root.after(max(16, round(1000 / ACTION_FPS.get(self.action, 12))), self.tick)
@@ -586,9 +591,15 @@ class RigDesktopCatApp:
 
     def reset_position(self) -> None:
         target_x, target_y = self.default_position()
+        start_x = self.root.winfo_x()
+        start_y = self.root.winfo_y()
+        self.resetting_position = True
+        self.happy_direction = 1 if target_x >= start_x else -1
+        self.happy_start = None
+        self.set_action(reset_return_action(start_x, target_x), 2.0)
         self.animate_reset_position(
-            start_x=self.root.winfo_x(),
-            start_y=self.root.winfo_y(),
+            start_x=start_x,
+            start_y=start_y,
             target_x=target_x,
             target_y=target_y,
             step=0,
@@ -616,7 +627,9 @@ class RigDesktopCatApp:
             )
             return
         self.root.geometry(f"+{target_x}+{target_y}")
+        self.resetting_position = False
         self.store.update_position(target_x, target_y)
+        self.set_action("idle", 1.0)
         self.bubble.show("我跳回屏幕角落啦。", target_x + WIDTH // 2, target_y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def happy(self) -> None:

@@ -198,6 +198,64 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 else:
                     os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
 
+    def test_rig_falls_back_to_default_pack_when_custom_pack_is_malformed(self) -> None:
+        from desktop_cat import rig_app
+        from desktop_cat.companion_messages import load_default_companion_pack
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                store = ConfigStore()
+                custom_path = Path(temp_dir) / "companion_messages" / "partner_custom.json"
+                custom_path.parent.mkdir(parents=True, exist_ok=True)
+                custom_path.write_text("{not valid json", encoding="utf-8")
+                store.config.companion_message_pack = "companion_messages/partner_custom.json"
+                app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+                app.store = store
+
+                pack = app.load_configured_companion_pack()
+
+                self.assertEqual(
+                    [message.id for message in load_default_companion_pack().messages],
+                    [message.id for message in pack.messages],
+                )
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
+    def test_rig_falls_back_to_default_pack_when_custom_pack_has_no_valid_messages(self) -> None:
+        from desktop_cat import rig_app
+        from desktop_cat.companion_messages import load_default_companion_pack
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                store = ConfigStore()
+                custom_path = Path(temp_dir) / "companion_messages" / "partner_custom.json"
+                custom_path.parent.mkdir(parents=True, exist_ok=True)
+                custom_path.write_text('{"messages": [{"id": "broken"}]}', encoding="utf-8")
+                store.config.companion_message_pack = "companion_messages/partner_custom.json"
+                app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+                app.store = store
+
+                pack = app.load_configured_companion_pack()
+
+                self.assertEqual(
+                    [message.id for message in load_default_companion_pack().messages],
+                    [message.id for message in pack.messages],
+                )
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
     def test_open_config_folder_returns_config_dir_and_creates_readme(self) -> None:
         from desktop_cat.config import ConfigStore
 
@@ -282,6 +340,35 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertIn("RESET_JUMP_STEPS", source)
         self.assertIn("RESET_JUMP_HOP_PX", source)
         self.assertIn("animate_reset_position", reset_source)
+
+    def test_reset_position_uses_lively_sprite_action_during_motion(self) -> None:
+        from desktop_cat import rig_app
+
+        source = inspect.getsource(rig_app.RigDesktopCatApp)
+        reset_source = inspect.getsource(rig_app.RigDesktopCatApp.reset_position)
+        animate_source = inspect.getsource(rig_app.RigDesktopCatApp.animate_reset_position)
+
+        self.assertIn("reset_return_action", source)
+        self.assertIn("self.resetting_position = True", reset_source)
+        self.assertIn("self.set_action(reset_return_action", reset_source)
+        self.assertIn("self.resetting_position = False", animate_source)
+        self.assertIn('self.set_action("idle"', animate_source)
+
+    def test_resetting_position_does_not_apply_action_movement_twice(self) -> None:
+        from desktop_cat import rig_app
+
+        tick_source = inspect.getsource(rig_app.RigDesktopCatApp.tick)
+
+        self.assertIn("not self.resetting_position", tick_source)
+
+    def test_reset_position_motion_is_slow_enough_for_jump_frames(self) -> None:
+        from desktop_cat import rig_app
+
+        reset_motion_ms = rig_app.RESET_JUMP_STEPS * rig_app.RESET_JUMP_INTERVAL_MS
+        happy_motion_ms = round(1000 / rig_app.ACTION_FPS["happy"]) * 48
+
+        self.assertGreaterEqual(reset_motion_ms, happy_motion_ms - 120)
+        self.assertGreaterEqual(rig_app.RESET_JUMP_STEPS, 40)
 
 
 if __name__ == "__main__":

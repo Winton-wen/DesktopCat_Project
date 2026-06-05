@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import sys
+import tempfile
 import unittest
 from datetime import datetime, time, timedelta
 from pathlib import Path
@@ -66,6 +67,26 @@ class CompanionMessageTests(unittest.TestCase):
 
         self.assertIn("--test-companion-time", launcher)
         self.assertIn("check_companion_message(args.test_companion_time)", launcher)
+
+    def test_empty_companion_message_pack_is_rejected(self) -> None:
+        from desktop_cat.companion_messages import load_companion_pack
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "empty_companion_pack.json"
+            path.write_text('{"messages": []}', encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_companion_pack(path)
+
+    def test_invalid_companion_message_pack_is_rejected(self) -> None:
+        from desktop_cat.companion_messages import load_companion_pack
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid_companion_pack.json"
+            path.write_text('{"messages": [{"id": "broken"}]}', encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_companion_pack(path)
 
     def test_rig_app_has_companion_message_runtime_flow(self) -> None:
         from desktop_cat import rig_app
