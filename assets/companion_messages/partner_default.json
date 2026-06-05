@@ -1,0 +1,83 @@
+{
+  "pack_id": "partner_default_v1",
+  "description": "Offline companion messages for a gentle long-distance DesktopCat gift.",
+  "messages": [
+    {
+      "id": "morning_01",
+      "category": "morning",
+      "text": "早上好呀，今天也慢慢来，不要一醒来就把自己绷太紧。",
+      "cooldown_hours": 24,
+      "action": "wave"
+    },
+    {
+      "id": "morning_02",
+      "category": "morning",
+      "text": "小猫来陪你开始今天啦，先深呼吸一下。",
+      "cooldown_hours": 24,
+      "action": "cute"
+    },
+    {
+      "id": "lunch_01",
+      "category": "lunch",
+      "text": "小猫替我监督你吃饭啦，不许随便糊弄过去。",
+      "cooldown_hours": 12,
+      "action": "wave"
+    },
+    {
+      "id": "afternoon_01",
+      "category": "afternoon",
+      "text": "下午也辛苦啦，累了就看小猫发一会儿呆。",
+      "cooldown_hours": 18,
+      "action": "cute"
+    },
+    {
+      "id": "evening_01",
+      "category": "evening",
+      "text": "忙了一天辛苦啦，看到小猫就当我抱你一下。",
+      "cooldown_hours": 18,
+      "action": "happy"
+    },
+    {
+      "id": "bedtime_01",
+      "category": "bedtime",
+      "text": "已经很晚啦，小猫想陪你早点休息。",
+      "cooldown_hours": 12,
+      "action": "sleep"
+    },
+    {
+      "id": "late_night_01",
+      "category": "late_night",
+      "text": "如果还没睡，小猫要皱眉了。我也会心疼的。",
+      "cooldown_hours": 12,
+      "action": "sleep"
+    },
+    {
+      "id": "miss_you_01",
+      "category": "miss_you",
+      "text": "今天也很想你，但我们都先把眼前的事做好。",
+      "cooldown_hours": 36,
+      "action": "wave"
+    },
+    {
+      "id": "busy_support_01",
+      "category": "busy_support",
+      "text": "你先忙你的，小猫会安静陪着你。",
+      "cooldown_hours": 24,
+      "action": "blink"
+    },
+    {
+      "id": "comfort_01",
+      "category": "comfort",
+      "text": "不顺利也没关系，慢慢来，我一直站在你这边。",
+      "cooldown_hours": 36,
+      "action": "cute"
+    },
+    {
+      "id": "encouragement_01",
+      "category": "encouragement",
+      "text": "今天已经做得很好啦，不要只盯着还没完成的部分。",
+      "cooldown_hours": 36,
+      "action": "happy"
+    }
+  ]
+}
