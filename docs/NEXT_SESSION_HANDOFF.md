@@ -1,227 +1,324 @@
-# DesktopCat 新窗口交接说明
+# DesktopCat / DesktopPig Next Session Handoff
 
-更新日期：2026-06-01
+Updated: 2026-06-05 16:10 +08:00
 
-## 一句话目标
+## Project
 
-这是一个 Windows 桌面宠物小猫项目，仓库路径是：
+- Repo path: `E:\Project\DesktopPig_Project`
+- Remote: `https://github.com/Winton-wen/DesktopCat_Project.git`
+- Branch: `main`
+- Current functional pushed HEAD: `15c1ae4 Polish DesktopCat gift package`
+- `main` is aligned with `origin/main` at `15c1ae4` before this handoff-only update.
 
-```text
-E:\Project\DesktopPig_Project
-```
+## Current Goal
 
-最终目标是做出接近 QQ 宠物级别的“活物感”：角色稳定、动作自然、可拖拽、可交互、可打包运行。当前优先级是动画资产和视觉 QA，不是养成系统、商城、联网、账号或复杂设置。
+Continue building a QQ-pet-level desktop cat for a long-distance relationship:
+**polished sprite pet first -> low-burden companion behaviors -> gift-quality packaging**.
 
-## 当前 Git / GitHub 状态
+The pet should feel gentle, personal, non-disruptive, and gift-like. Avoid heavy
+raising systems, shops, currencies, high-frequency notifications, AI chat as the
+main experience, and anything that makes the partner maintain another app.
 
-- 本地已初始化 Git 仓库。
-- 当前分支：`main`
-- GitHub 远端：`https://github.com/Winton-wen/DesktopCat_Project.git`
-- 当前提交：`e544c6c Initial DesktopCat project`
-- 本地 `main` 已推送并跟踪 `origin/main`。
-- `.gitignore` 已排除 `.petvenv/`、`build/`、`dist/`、`backups/`、QA 生成物、smoke 临时配置、缓存和 `*_before_synth/`。
-- GitHub CLI 已安装并登录为 `Winton-wen`；如果当前终端找不到 `gh`，重开终端即可。
+## Must Read First
 
-常用习惯：每完成一个小阶段就提交，阶段可运行时再推送。用户不想死记命令，可以直接让 Codex “提交并推送当前版本”。
-
-## 必须先读的文档
-
-新窗口开始时请读取：
+At the start of the next window, read:
 
 ```text
 docs/NEXT_SESSION_HANDOFF.md
 docs/character-spec.md
 docs/animation-contract-v2.md
-docs/asset-production-pipeline.md
+docs/companion-experience-roadmap.md
 assets/production/desktop_cat/batch_manifest.json
+candidate_launcher.py
+gift_launcher.py
+build_gift.ps1
+tools/run_candidate_feature_qa.py
+src/desktop_cat/rig_app.py
+src/desktop_cat/companion_messages.py
+src/desktop_cat/config.py
+src/desktop_cat/time_reminders.py
 ```
 
-## 角色锁定
+Then run:
 
-主角是一只 3D Q 版奶油橘白小猫：
+```powershell
+git status --short --branch
+git log -8 --oneline --decorate
+git stash list -n 5
+```
 
-- 大头短圆身体，软萌玩偶比例。
-- 大而亮的深棕色眼睛。
-- 小粉鼻、淡腮红。
-- 橘白虎斑，白色嘴套、胸腹、爪子。
-- 蓬松环纹尾巴。
-- 粉棕格纹大蝴蝶结。
-- 蝴蝶结中心有金色铃铛。
+## User Preferences And Safety Rules
 
-蝴蝶结、铃铛、眼睛颜色、橘白纹路、尾巴形状是身份锚点，不能在动作之间漂移、消失或换样式。
+- Do not commit or push unless the user explicitly asks.
+- Do not delete or break stable runnable versions.
+- Keep the current route: full transparent PNG sprite assets remain stable and QA-able.
+- Visual QA matters more than tests alone for animation/UI behavior.
+- Preserve untracked `raw/wake_*` experiment assets unless the user explicitly asks to clean them.
+- Do not accidentally stage `raw/wake_*`.
+- `docs/NEXT_SESSION_HANDOFF.md` may be updated and committed only when the user requests handoff.
+- The Supabase live-message prototype is deferred. Do not restore `stash@{0}` unless explicitly asked.
+- Prefer offline-first companion value before networked features.
+- Low-distraction mode exists, but the user explicitly rejected making it the default.
 
-## 当前运行入口
+## Current Git State
 
-稳定版和候选版都保留，不要删除。
+Last checked before this handoff update:
 
-候选预览入口：
+```text
+## main...origin/main
+ M docs/NEXT_SESSION_HANDOFF.md
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_12poses_v4_generated_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_12poses_v4_generated_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_16poses_v7_clean_eyes_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_16poses_v7_clean_eyes_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_20poses_v5_generated_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_20poses_v5_generated_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_38poses_v6_generated_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_38poses_v6_generated_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_eye_open_settle_v1_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_eye_open_settle_v1_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_keyposes/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_keyposes_scaled/
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_full_v8_generated_chromakey.png
+?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_full_v8_generated_keyposes/
+```
+
+Recent commits:
+
+```text
+15c1ae4 (HEAD -> main, origin/main) Polish DesktopCat gift package
+384f862 Add gift-ready DesktopCat packaging
+fd1fd88 Queue pet actions and speech bubbles
+5d2ed19 Add return home animation action
+d31191d Add candidate feature QA tour
+ea7a2b1 Add gift-ready companion config flow
+3f22b4d Move reminder dismiss button below pet
+a007fac Repeat reminders until dismissed
+```
+
+Deferred stash:
+
+```text
+stash@{0}: On main: cat messaging mvp WIP
+```
+
+Do not apply this stash unless the user explicitly asks to resume Supabase partner messaging.
+
+## Accepted Current State
+
+### Active Candidate Batch
+
+- Active candidate batch: `20260527_motion_quality_v1`
+- Runtime preview: `candidate_launcher.py`
+- Gift runtime entrypoint: `gift_launcher.py`
+- Source frames: `assets/production/desktop_cat/batches/20260527_motion_quality_v1/clean`
+- Wake remains `80` frames at `32fps`.
+- The rejected `96` frame wake expansion remains rejected; do not resume that direction.
+
+### Runtime Behavior
+
+- Non-idle actions now queue instead of interrupting current non-idle actions.
+- Speech bubbles now queue instead of immediately replacing visible bubbles.
+- Queued bubbles use the current pet anchor when displayed, fixing post-drag bubble jumps.
+- Drag remains immediate and responsive.
+- Sleep-loop click can still wake immediately.
+- `return_home` uses the committed lively jump-back behavior; the attempted walk-only replacement was reverted.
+- Reset-to-corner still prefers `return_home` when returning to the right-side default corner.
+- Last valid on-screen position is restored on restart; off-screen saved positions fall back to the default corner.
+
+### Gift Package
+
+Current polished gift artifact:
+
+```text
+dist/DesktopCatGift_20260605_polished.zip
+```
+
+Size:
+
+```text
+82,798,481 bytes
+```
+
+Unzipped executable:
+
+```text
+dist/DesktopCatGift/DesktopCatGift.exe
+```
+
+Partner-facing README:
+
+```text
+dist/DesktopCatGift/README_先看我.txt
+assets/gift/README_先看我.txt
+```
+
+Gift polish now includes:
+
+- Partner-facing README instructions.
+- Kitten app icon: `assets/gift/desktopcat.ico`.
+- Slimmed packaging: `build_gift.ps1` packages only the active batch clean frames, companion messages, and gift assets.
+- Warmer first-launch message with delayed companion-message start.
+- Right-click couple interactions:
+  - `我想他了`
+  - `今天辛苦啦`
+- Chinese runtime strings verified as readable in Python; terminal mojibake is a display issue unless UI text is visibly wrong.
+
+### Offline Companion Flow
+
+- Offline message pack: `assets/companion_messages/partner_default.json`
+- User-editable copy is created at config-time as `companion_messages/partner_custom.json`.
+- Bad configured custom packs fall back to default:
+  - malformed JSON
+  - empty `messages`
+  - all-invalid message entries
+
+### Low-Distraction And Time Rhythm
+
+- `low_distraction_mode` exists in config and can be toggled from the context menu.
+- Do not make low-distraction mode default unless the user reverses the decision.
+- Candidate preview examples:
+
+```powershell
+python candidate_launcher.py 20260527_motion_quality_v1 --low-distraction
+python candidate_launcher.py 20260527_motion_quality_v1 --test-rhythm-time 02:30
+python candidate_launcher.py 20260527_motion_quality_v1 --test-rhythm-time 20:30 --low-distraction
+```
+
+## Validation Already Run
+
+Full relevant tests:
+
+```powershell
+python -m pytest tests\test_stable_sprite_route.py tests\test_production_pipeline.py tests\test_rig_preview.py tests\test_companion_messages.py tests\test_low_distraction_mode.py tests\test_time_rhythm.py tests\test_speech_bubble_polish.py tests\test_gift_config_experience.py tests\test_candidate_feature_qa_script.py
+```
+
+Result:
+
+```text
+115 passed
+```
+
+Gift build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build_gift.ps1
+```
+
+Result:
+
+```text
+production_batch_full_qa_ok batch=20260527_motion_quality_v1 actions=idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,return_home,drag
+Gift build complete: dist\DesktopCatGift\DesktopCatGift.exe
+Batch: 20260527_motion_quality_v1
+```
+
+Zip package smoke:
+
+```powershell
+tar -xf dist\DesktopCatGift_20260605_polished.zip -C desktopcat_zip_extract_smoke_polished_20260605
+.\desktopcat_zip_extract_smoke_polished_20260605\DesktopCatGift\DesktopCatGift.exe --smoke-ms 3000
+```
+
+Result:
+
+```text
+No lingering DesktopCatGift process.
+desktopcat_smoke_config_gift_polished_zip_exe/config.json was generated.
+```
+
+Candidate visible smoke:
+
+```powershell
+python tools\run_candidate_feature_qa.py --smoke
+```
+
+Result:
+
+```text
+candidate_feature_qa_report=E:\Project\DesktopPig_Project\qa_reports\candidate_feature_qa_20260605_160220.txt
+71 passed in smoke pytest subset
+production_batch_full_qa_ok batch=20260527_motion_quality_v1 actions=idle,blink,wake,return_home
+```
+
+## Known Issues / Watch Points
+
+- `raw/wake_*` files are experiment material. Do not stage them by accident.
+- `docs/NEXT_SESSION_HANDOFF.md` is expected to be changed only by handoff requests.
+- Some PowerShell output displays Chinese as mojibake. Check actual UI/runtime strings before treating it as a bug.
+- QA tools write to shared `assets/production/desktop_cat/qa/<batch>` directories. Avoid running multiple production QA scopes in parallel.
+- `return_home` is accepted as lively jump-back behavior for now, but it is still synthesized, not a final hand-authored pose-sheet action.
+- `dist/` and zip files are ignored. The deliverable exists locally but is not committed.
+- PyInstaller may need elevated permission in this environment because it can hit permission errors reading user site-packages.
+
+## Next Recommended Steps
+
+The project is now ready to deliver the polished gift package:
+
+```text
+dist/DesktopCatGift_20260605_polished.zip
+```
+
+Recommended next work, only after the user wants more polish:
+
+1. Manually test the polished zip on the target machine if possible.
+2. Confirm first-launch UI text, right-click menu Chinese text, drag behavior, reset-to-corner, and quit behavior visually.
+3. If the gift is accepted, stop adding features for now.
+4. If continuing development, add only low-burden personal touches such as special-day messages or a meet-again countdown.
+5. Resume Supabase/network messaging only when both computers can be configured directly.
+
+## Useful Commands
+
+Manual candidate preview:
 
 ```powershell
 python candidate_launcher.py 20260527_motion_quality_v1
 ```
 
-已打包候选 exe：
+Gift build:
 
-```text
-dist\DesktopCatCandidatePreview\DesktopCatCandidatePreview.exe
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build_gift.ps1
 ```
 
-稳定/历史版本入口：
+Gift smoke from built executable:
 
-```text
-dist\DesktopCat\DesktopCat.exe
-dist\DesktopCatStablePreview\DesktopCatStablePreview.exe
+```powershell
+$env:DESKTOPCAT_CONFIG_DIR = Join-Path (Get-Location) 'desktopcat_smoke_config_gift_exe'
+.\dist\DesktopCatGift\DesktopCatGift.exe --smoke-ms 3000
+Remove-Item Env:DESKTOPCAT_CONFIG_DIR
 ```
 
-## 当前技术路线
+Candidate feature QA:
 
-当前实际路线是 **polished sprite pet first**，也就是先用完整透明 PNG 帧把动作质量做上去。曾经尝试过伪 Live2D/rig，但早期切层造成过耳朵缺角、爪子缺口、挥手凭空多一只手等问题，所以不要一上来替换运行时。
-
-长期路线可以是：
-
-1. 先把完整 sprite 动作做到自然、可播放、可 QA。
-2. 等关键动作稳定后，再考虑伪 Live2D / Spine / Live2D 风格的分层 rig。
-
-## 当前资产结构
-
-核心目录：
-
-```text
-assets/sprites/
-assets/production/desktop_cat/
-assets/production/desktop_cat/batches/stable_v2_baseline/
-assets/production/desktop_cat/batches/20260526_batch1_idle_blink_wave/
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/
-assets/rig_parts/desktop_cat/
-src/desktop_cat/
-tools/
-tests/
+```powershell
+python tools\run_candidate_feature_qa.py --smoke
+python tools\run_candidate_feature_qa.py --backend-only --fast
 ```
 
-生产批次说明：
+Full relevant tests:
 
-- `stable_v2_baseline`：受保护的稳定基线，不要覆盖。
-- `20260526_batch1_idle_blink_wave`：可运行候选批次，但动作质量不是最终。
-- `20260527_motion_quality_v1`：当前主力候选批次，目标是替换 happy、cute、sleep_in、wake、walk 等动作。
-
-## 当前已知动作问题
-
-用户最近明确指出的问题：
-
-1. `happy` 和 `cute` 播放时小猫尺寸明显比其他动作小很多。
-2. 用户认为 `happy/cute` 这个尺寸更合适，因此下一步应把所有动作统一到这个视觉尺寸，而不是把 happy/cute 放大。
-3. `happy`、`cute` 帧率观感很低。原因不是 FPS 数字太低，而是真实不同姿态数量太少，很多帧只是重复保持。
-4. `walk` 帧率观感低，而且有点鬼畜，需要真实步态和更平稳位移。
-5. `sleep_in` / `wake` 仍然不合格：旧版像小猫变扁/突然坐起，不像自然入睡或醒来。
-
-当前量化状态，来自 `20260527_motion_quality_v1/clean`：
-
-```text
-idle      16 frames, visible height about 430
-blink     10 frames, visible height about 430
-wave      17 frames, visible height about 430
-clicked    9 frames, visible height about 430
-happy     48 frames, visible height about 184-323
-cute      44 frames, visible height about 284-305
-sleep_in  11 frames, visible height about 341-430
-sleep     11 frames, visible height about 339-344
-wake      11 frames, visible height about 341-430
-walk      14 frames, visible height about 430
-walk_left 14 frames, visible height about 430
-drag       8 frames, visible height about 430
+```powershell
+python -m pytest tests\test_stable_sprite_route.py tests\test_production_pipeline.py tests\test_rig_preview.py tests\test_companion_messages.py tests\test_low_distraction_mode.py tests\test_time_rhythm.py tests\test_speech_bubble_polish.py tests\test_gift_config_experience.py tests\test_candidate_feature_qa_script.py
 ```
 
-结论：必须做视觉尺寸统一，目标高度大约 300px 左右，接近 `cute`。
+Full candidate production QA:
 
-## 最近已经做但未完成的工作
-
-已经生成了高密度 v2 姿态表，保存在：
-
-```text
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/happy_24poses_v2_chromakey.png
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/cute_24poses_v2_chromakey.png
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/sleep_in_24poses_v2_chromakey.png
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/wake_24poses_v2_chromakey.png
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/pose_sheets/walk_right_16poses_v2_chromakey.png
+```powershell
+python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --actions idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,return_home,drag
 ```
 
-其中 `sleep_in_24poses_v2_chromakey.png` 已视觉检查过：它是逐步犯困、低头、趴下、蜷睡，不是变扁。
-
-已更新导入工具：
-
-```text
-tools/import_keypose_sheet.py
-```
-
-它现在支持：
-
-- `--action`
-- `--frames`
-- `--mirror-action`
-- `--target-extent`
-- 绿幕转 alpha
-- 只保留最大 alpha 连通主体，避免邻格碎片
-
-但注意：**v2 姿态表还没有完整导入到 clean 动作目录，没有跑完整 QA，也没有重新打包。** 新窗口下一步应从这里继续。
-
-## 推荐下一步
-
-第一阶段：完成尺寸统一和 v2 动作导入。
-
-建议顺序：
-
-1. 用 `tools/import_keypose_sheet.py` 把 v2 姿态表导入到临时 raw 目录，目标 `--target-extent 300`。
-2. 把 `happy` 从 24 姿态表扩展/导入到 manifest 所需 48 帧，或更新 manifest 到真实 24 帧并同步 runtime/test。优先推荐保留 48 帧，但用 24 姿态均匀重复，每个姿态 2 帧。
-3. 把 `cute` 从 24 姿态表扩展到 44 帧，或调整 manifest；优先避免大量无意义重复。
-4. 把 `sleep_in` / `wake` 由 11 帧提升为 24 帧时，要同步更新：
-   - `assets/production/desktop_cat/batch_manifest.json`
-   - `src/desktop_cat/sprite_manifest.py`
-   - `src/desktop_cat/rig_app.py` 里的 `ACTION_FPS` 和 `action_frame_count`
-   - tests
-5. 把 `walk_right_16poses_v2_chromakey.png` 导入为 `walk`，并镜像为 `walk_left`。
-6. 把其他动作 `idle/blink/wave/clicked/drag/sleep` 统一缩放到和 `cute` 接近的尺寸，建议目标可见最大边约 300px。
-7. 生成 contact sheet 和 gif：
-   ```powershell
-   python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --actions idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,drag
-   ```
-8. 自己查看 QA 图和 GIF，重点看：
-   - 是否仍有尺寸跳变。
-   - 是否有绿边/碎片/缺耳缺爪。
-   - `happy/cute` 是否还是低帧率感。
-   - `sleep_in/wake` 是否自然。
-   - `walk/walk_left` 是否抖动或方向错。
-9. 通过后再打包 candidate，并 smoke test。
-
-## 重要原则
-
-- 不要删除稳定 exe 或稳定资产。
-- 不要把 `assets/sprites` 稳定基线当实验场乱改；优先在 `assets/production/desktop_cat/batches/20260527_motion_quality_v1` 里做候选。
-- 不要把位移、缩放、旋转 idle 图当作正式动作资产。
-- 动作合格标准以视觉 QA 为准，不只是测试通过。
-- 每完成一个阶段，建议提交并推送到 GitHub。
-
-## 新窗口推荐提示词
-
-请在新窗口直接粘贴下面这段：
+## New Window Prompt
 
 ```text
 请先读取并遵循 E:\Project\DesktopPig_Project\docs\NEXT_SESSION_HANDOFF.md。
 
-我们继续 DesktopCat / DesktopPig 项目，仓库路径是 E:\Project\DesktopPig_Project。目标是做出接近 QQ 宠物级别的桌面小猫，当前路线是 polished sprite pet first，先把完整透明 PNG 动作资产做到自然和稳定，再考虑伪 Live2D/Spine。请不要删除或破坏已有稳定可运行版本，也不要把 stable 基线当实验场。
+我们继续 DesktopCat / DesktopPig 项目，仓库路径是 E:\Project\DesktopPig_Project。当前路线是 polished sprite pet first -> low-burden companion behaviors -> gift-quality packaging，目标是给异地对象一个温柔、不打扰、像礼物一样的小猫桌宠。
 
-当前最新问题是：
-1. happy/cute 的小猫尺寸更合适，但其他动作明显大很多，所以要把所有动作统一到 happy/cute 接近的视觉尺寸。
-2. happy/cute 的帧率观感仍低，需要用已生成的 24 姿态 v2 表继续导入/补帧，而不是 idle 变形。
-3. walk 低帧率且鬼畜，需要使用 walk_right_16poses_v2_chromakey.png 重做 walk，并镜像 walk_left。
-4. sleep_in/wake 旧版仍像变扁和突然坐起，需要使用 sleep_in_24poses_v2_chromakey.png 和 wake_24poses_v2_chromakey.png 重做。
+请先恢复上下文：读取 docs/NEXT_SESSION_HANDOFF.md、docs/character-spec.md、docs/animation-contract-v2.md、docs/companion-experience-roadmap.md、assets/production/desktop_cat/batch_manifest.json、candidate_launcher.py、gift_launcher.py、build_gift.ps1、tools/run_candidate_feature_qa.py、src/desktop_cat/rig_app.py、src/desktop_cat/config.py、src/desktop_cat/companion_messages.py、src/desktop_cat/time_reminders.py；然后检查 git status --short --branch、git log -8 --oneline --decorate、git stash list -n 5。
 
-请先做上下文恢复：
-- 读取 docs/NEXT_SESSION_HANDOFF.md
-- 读取 docs/character-spec.md
-- 读取 docs/animation-contract-v2.md
-- 查看 assets/production/desktop_cat/batch_manifest.json
-- 查看 tools/import_keypose_sheet.py
-- 检查当前 git status
+当前功能版已推送到 main/origin/main：15c1ae4 Polish DesktopCat gift package。最新可交付礼物包是 dist/DesktopCatGift_20260605_polished.zip，已通过 115 个相关测试、build_gift.ps1 构建、zip 解压 smoke、candidate visible smoke。Supabase 传话原型仍在 stash@{0}: cat messaging mvp WIP，不要恢复，除非我明确要求。raw/wake_* 实验素材不要误提交。
 
-然后继续下一步：在 20260527_motion_quality_v1 批次中完成尺寸统一、导入 v2 动作、生成 QA contact sheet/GIF，边看边改，直到 candidate preview 可打开检查。完成一个阶段后帮我提交并推送到 GitHub。
+下一步优先级：如果只是交付礼物，先不要继续加功能；如需继续优化，先做目标机器手动验收，确认首次启动、右键菜单、拖拽、回角落、退出、中文 UI 文案都正常。
 ```
