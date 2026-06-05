@@ -180,6 +180,32 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 else:
                     os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
 
+    def test_default_partner_facing_text_is_readable_chinese(self) -> None:
+        from desktop_cat.config import PARTNER_NICKNAME, PET_NAME, README_TEXT
+        from desktop_cat.rig_app import TEXT, low_distraction_menu_label
+        from desktop_cat.time_reminders import DINNER_REMINDER, LUNCH_REMINDER
+
+        readable_text = "\n".join(
+            [
+                PET_NAME,
+                PARTNER_NICKNAME,
+                README_TEXT,
+                *TEXT.values(),
+                low_distraction_menu_label(False),
+                low_distraction_menu_label(True),
+                LUNCH_REMINDER.message,
+                DINNER_REMINDER.message,
+            ]
+        )
+
+        self.assertIn("奶糖猫", readable_text)
+        self.assertIn("宝贝", readable_text)
+        self.assertIn("进入低打扰模式", readable_text)
+        self.assertIn("小猪猪要乖乖按时吃午饭哟", readable_text)
+        self.assertNotIn("鑷", readable_text)
+        self.assertNotIn("闄", readable_text)
+        self.assertNotIn("�", readable_text)
+
     def test_open_companion_message_pack_creates_readme(self) -> None:
         from desktop_cat.config import ConfigStore
 
@@ -343,6 +369,30 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertIn("dist\\$AppName\\$AppName.exe", script)
         self.assertNotIn("DesktopCatCandidatePreview", script)
 
+    def test_gift_build_script_packages_only_runtime_assets(self) -> None:
+        script = (ROOT / "build_gift.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("assets\\production\\desktop_cat\\batches\\$BatchId\\clean", script)
+        self.assertIn("assets\\companion_messages", script)
+        self.assertIn("assets\\gift", script)
+        self.assertIn("--icon", script)
+        self.assertNotIn('$Root\\assets;assets', script)
+        self.assertNotIn("raw", script)
+
+    def test_gift_readme_is_partner_facing(self) -> None:
+        readme_path = ROOT / "assets" / "gift" / "README_先看我.txt"
+        self.assertTrue(readme_path.exists())
+        text = readme_path.read_text(encoding="utf-8")
+
+        self.assertIn("先解压", text)
+        self.assertIn("DesktopCatGift.exe", text)
+        self.assertIn("右键", text)
+        self.assertIn("退出", text)
+        self.assertNotIn("Candidate", text)
+
+    def test_gift_launcher_uses_icon_path(self) -> None:
+        self.assertTrue((ROOT / "assets" / "gift" / "desktopcat.ico").exists())
+
     def test_rig_candidate_menu_can_reset_position(self) -> None:
         from desktop_cat import rig_app
 
@@ -397,6 +447,44 @@ class GiftConfigExperienceTests(unittest.TestCase):
 
         self.assertGreaterEqual(reset_motion_ms, happy_motion_ms - 120)
         self.assertGreaterEqual(rig_app.RESET_JUMP_STEPS, 40)
+
+    def test_rig_menu_has_couple_specific_gift_interactions(self) -> None:
+        from desktop_cat import rig_app
+
+        source = inspect.getsource(rig_app.RigDesktopCatApp)
+        menu_source = inspect.getsource(rig_app.RigDesktopCatApp.on_menu)
+
+        self.assertIn("miss_partner", source)
+        self.assertIn("tired_today", source)
+        self.assertIn("我想他了", menu_source)
+        self.assertIn("今天辛苦啦", menu_source)
+
+    def test_saved_position_is_reused_when_it_is_on_screen(self) -> None:
+        from desktop_cat.rig_app import saved_position_or_default
+
+        self.assertEqual(
+            (320, 240),
+            saved_position_or_default({"x": 320, "y": 240}, (900, 600), (1200, 800)),
+        )
+
+    def test_saved_position_falls_back_when_it_is_off_screen(self) -> None:
+        from desktop_cat.rig_app import saved_position_or_default
+
+        self.assertEqual(
+            (900, 600),
+            saved_position_or_default({"x": 5000, "y": 240}, (900, 600), (1200, 800)),
+        )
+
+    def test_first_launch_delays_competing_bubbles(self) -> None:
+        from desktop_cat import rig_app
+
+        source = inspect.getsource(rig_app.RigDesktopCatApp)
+        first_launch_source = inspect.getsource(rig_app.RigDesktopCatApp.show_first_launch_message)
+
+        self.assertIn("FIRST_LAUNCH_COMPANION_DELAY_MS", source)
+        self.assertIn("first_launch_pending", source)
+        self.assertIn("hide_ms=9000", first_launch_source)
+        self.assertIn("wave", first_launch_source)
 
 
 if __name__ == "__main__":

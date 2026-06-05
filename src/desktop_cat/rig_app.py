@@ -37,6 +37,8 @@ SPEECH_BUBBLE_PET_OVERLAP_PX = 60
 DISMISS_BUTTON_GAP_PX = 6
 TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 LOW_DISTRACTION_COMPANION_CHECK_MS = 60 * 60 * 1000
+DEFAULT_COMPANION_START_DELAY_MS = 20 * 1000
+FIRST_LAUNCH_COMPANION_DELAY_MS = 45 * 1000
 RESET_JUMP_STEPS = 48
 RESET_JUMP_INTERVAL_MS = 42
 RESET_JUMP_HOP_PX = 30
@@ -85,6 +87,16 @@ TEXT = {
     "walk_left": "\u6211\u5f80\u5de6\u8d70\u4e24\u6b65\u3002",
     "walk_right": "\u6211\u5f80\u53f3\u8d70\u4e24\u6b65\u3002",
 }
+MISS_PARTNER_MESSAGES = [
+    "我也很想他呀。先抱抱你，小猫陪你等他忙完。",
+    "想他的时候就摸摸小猫，我会替他陪你一会儿。",
+    "距离有点远，但喜欢一直都在。小猫帮你记着呢。",
+]
+TIRED_TODAY_MESSAGES = [
+    "今天辛苦啦，先慢慢呼吸一下，别把自己绷太紧。",
+    "忙完这一阵就休息一下吧，小猫在这里陪你。",
+    "已经很努力啦。喝点水，摸摸头，今晚对自己温柔一点。",
+]
 
 
 def frame_sort_key(path: Path) -> tuple[int, str]:
@@ -147,6 +159,25 @@ def idle_action_choices(
 
 def reset_return_action(start_x: int, target_x: int) -> str:
     return "return_home" if target_x >= start_x else "happy"
+
+
+def saved_position_or_default(
+    saved_position: dict[str, int] | None,
+    default_position: tuple[int, int],
+    screen_size: tuple[int, int],
+) -> tuple[int, int]:
+    if not saved_position:
+        return default_position
+    x = saved_position.get("x")
+    y = saved_position.get("y")
+    if type(x) is not int or type(y) is not int:
+        return default_position
+    screen_w, screen_h = screen_size
+    max_x = screen_w - WIDTH - SCREEN_MARGIN
+    max_y = screen_h - HEIGHT - SCREEN_MARGIN
+    if SCREEN_MARGIN <= x <= max_x and SCREEN_MARGIN <= y <= max_y:
+        return x, y
+    return default_position
 
 
 def low_distraction_menu_label(enabled: bool) -> str:
@@ -215,7 +246,9 @@ class ProductionBatchFrameSource(StableSpriteFrameSource):
         self.load()
 
     def load(self) -> None:
-        super().load()
+        stable_root = app_root() / "assets" / StableSpriteFrameSource.asset_folder
+        if stable_root.exists():
+            super().load()
         for folder in sorted(self.root.iterdir()):
             if not folder.is_dir() or folder.name in self.frames:
                 continue
@@ -226,6 +259,8 @@ class ProductionBatchFrameSource(StableSpriteFrameSource):
                 frames.append(ImageTk.PhotoImage(image))
             if frames:
                 self.frames[folder.name] = frames
+        if "idle" not in self.frames:
+            raise RuntimeError(f"Missing idle sprites for production batch {self.batch_id}.")
 
 
 def production_batch_clean_root(batch_id: str) -> Path:
@@ -467,6 +502,7 @@ class RigDesktopCatApp:
         if low_distraction_mode is not None:
             self.store.config.low_distraction_mode = low_distraction_mode
         self.test_first_launch = test_first_launch
+        self.first_launch_pending = test_first_launch or not self.store.config.first_launch_completed
         self.root = tk.Tk()
         self.root.title(title)
         self.root.overrideredirect(True)
@@ -507,13 +543,15 @@ class RigDesktopCatApp:
 
         self.place_initially()
         self.draw()
+        self.action_until = time.monotonic() + 2.5
         self.root.after(120, self.tick)
-        if self.test_first_launch or not self.store.config.first_launch_completed:
+        if self.first_launch_pending:
             self.root.after(1200, self.show_first_launch_message)
         if enable_time_reminders:
             self.root.after(1500, self.check_time_reminder)
         if enable_companion_messages:
-            self.root.after(20000, self.check_companion_message)
+            delay_ms = FIRST_LAUNCH_COMPANION_DELAY_MS if self.first_launch_pending else DEFAULT_COMPANION_START_DELAY_MS
+            self.root.after(delay_ms, self.check_companion_message)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -530,7 +568,11 @@ class RigDesktopCatApp:
         return sw - WIDTH - 28, sh - HEIGHT - 56
 
     def place_initially(self) -> None:
-        x, y = self.default_position()
+        x, y = saved_position_or_default(
+            self.store.config.last_position,
+            self.default_position(),
+            (self.root.winfo_screenwidth(), self.root.winfo_screenheight()),
+        )
         self.root.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
 
     def action_frame_count(self) -> int:
@@ -625,7 +667,13 @@ class RigDesktopCatApp:
         self.bubble.show(text, *self.pet_anchor())
 
     def show_first_launch_message(self) -> None:
-        self.say(f"{self.store.config.pet_name}来陪你啦。")
+        self.set_action("wave", 2.2, force=True)
+        self.bubble.show(
+            f"{self.store.config.pet_name}来陪你啦。想你或者累的时候，摸摸小猫就好。",
+            *self.pet_anchor(),
+            hide_ms=9000,
+        )
+        self.first_launch_pending = False
         if not self.test_first_launch:
             self.store.mark_first_launch_completed()
 
@@ -676,6 +724,16 @@ class RigDesktopCatApp:
         enabled = not self.store.config.low_distraction_mode
         self.store.update_low_distraction_mode(enabled)
         self.say("低打扰模式已开启。" if enabled else "低打扰模式已关闭。")
+
+    def show_gift_interaction(self, text: str, action: str = "cute") -> None:
+        self.set_action(action, 2.2)
+        self.bubble.show(text, *self.pet_anchor(), hide_ms=10000)
+
+    def miss_partner(self) -> None:
+        self.show_gift_interaction(random.choice(MISS_PARTNER_MESSAGES), action="wave")
+
+    def tired_today(self) -> None:
+        self.show_gift_interaction(random.choice(TIRED_TODAY_MESSAGES), action="cute")
 
     def open_config(self) -> None:
         os.startfile(str(self.store.open_file()))
@@ -847,6 +905,9 @@ class RigDesktopCatApp:
         menu.add_command(label="向左散步", command=self.walk_left)
         menu.add_command(label="向右散步", command=self.walk_right)
         menu.add_command(label="\u8d34\u7740\u7761\u4f1a\u513f", command=self.sleep)
+        menu.add_separator()
+        menu.add_command(label="我想他了", command=self.miss_partner)
+        menu.add_command(label="今天辛苦啦", command=self.tired_today)
         menu.add_separator()
         menu.add_command(
             label=low_distraction_menu_label(self.store.config.low_distraction_mode),
