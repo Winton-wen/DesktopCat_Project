@@ -24,7 +24,13 @@ def find_batch(manifest: dict, batch_id: str) -> dict:
 
 
 def action_specs_for_batch(manifest: dict, batch: dict, requested: list[str] | None = None) -> dict:
-    actions = requested or list(manifest["actions"].keys())
+    if requested is not None:
+        actions = requested
+    elif "actions" in batch:
+        actions = batch["actions"]
+    else:
+        source = ROOT / batch["source"]
+        actions = [action for action in manifest["actions"] if (source / action).exists()]
     overrides = batch.get("action_overrides", {})
     specs = {}
     for action in actions:

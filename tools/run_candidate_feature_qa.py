@@ -20,7 +20,7 @@ from desktop_cat.rig_app import CandidateDesktopCatApp
 
 
 DEFAULT_BATCH_ID = "20260527_motion_quality_v1"
-DEFAULT_ACTIONS = "idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,drag"
+DEFAULT_ACTIONS = "idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,return_home,drag"
 PYTEST_TARGETS = [
     "tests/test_stable_sprite_route.py",
     "tests/test_production_pipeline.py",
@@ -78,7 +78,7 @@ def backend_commands(batch_id: str, fast: bool) -> list[tuple[str, list[str]]]:
             "tests/test_gift_config_experience.py",
             "tests/test_candidate_feature_qa_script.py",
         ]
-        actions = "idle,blink,wake"
+        actions = "idle,blink,wake,return_home"
     else:
         pytest_targets = PYTEST_TARGETS
         actions = DEFAULT_ACTIONS

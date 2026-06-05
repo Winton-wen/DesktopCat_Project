@@ -354,6 +354,11 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertIn("self.resetting_position = False", animate_source)
         self.assertIn('self.set_action("idle"', animate_source)
 
+    def test_reset_return_action_prefers_dedicated_return_home_animation(self) -> None:
+        from desktop_cat import rig_app
+
+        self.assertEqual("return_home", rig_app.reset_return_action(24, 1200))
+
     def test_resetting_position_does_not_apply_action_movement_twice(self) -> None:
         from desktop_cat import rig_app
 

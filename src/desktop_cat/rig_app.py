@@ -47,6 +47,7 @@ ACTION_FPS = {
     "clicked": 12,
     "happy": 24,
     "happy_right": 24,
+    "return_home": 24,
     "sleep_in": 24,
     "sleep": 8,
     "wake": 32,
@@ -143,7 +144,7 @@ def idle_action_choices(
 
 
 def reset_return_action(start_x: int, target_x: int) -> str:
-    return "happy_right" if target_x >= start_x else "happy"
+    return "return_home" if target_x >= start_x else "happy"
 
 
 def low_distraction_menu_label(enabled: bool) -> str:
@@ -468,6 +469,7 @@ class RigDesktopCatApp:
             "drag": 8,
             "happy": 48,
             "happy_right": 48,
+            "return_home": 48,
             "cute": 44,
             "sleep_in": 99,
             "sleep": 11,
@@ -596,7 +598,7 @@ class RigDesktopCatApp:
         self.resetting_position = True
         self.happy_direction = 1 if target_x >= start_x else -1
         self.happy_start = None
-        self.set_action(reset_return_action(start_x, target_x), 2.0)
+        self.set_action(reset_return_action(start_x, target_x), 2.1)
         self.animate_reset_position(
             start_x=start_x,
             start_y=start_y,

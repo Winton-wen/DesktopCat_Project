@@ -32,6 +32,7 @@ class CandidateFeatureQaScriptTests(unittest.TestCase):
         self.assertIn("test_stable_sprite_route.py", source)
         self.assertIn("test_gift_config_experience.py", source)
         self.assertIn("run_production_batch_qa.py", source)
+        self.assertIn("return_home", source)
 
     def test_script_has_visual_tour_steps_for_frontend_features(self) -> None:
         source = self.script_source()

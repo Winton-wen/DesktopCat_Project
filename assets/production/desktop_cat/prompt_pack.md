@@ -66,5 +66,12 @@ anticipation bounce, soft blink or sparkling eyes, head/body tilts gently side
 to side, one paw or both paws tuck near the bow, cheeks look extra soft, tail
 flicks lightly, then returns to idle. No harsh pose jump, no extra limb.
 
+`return_home`: rightward return-to-corner motion: starts from idle, small
+anticipation crouch, front paws step or hop forward through several readable
+in-betweens, body and bow/bell bob with delayed secondary motion, tail follows
+the travel direction, then lands and settles back into an idle-compatible
+sitting pose. Must read as the kitten moving itself home, not a static sticker
+being translated.
+
 `drag`: front paws slightly lifted, soft hanging body, puzzled cute expression,
 slow movement, no fast head shake.

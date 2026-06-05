@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION = ROOT / "assets" / "production" / "desktop_cat"
 
 
+def compare_errors_are_only_missing_baselines(compare_report: dict) -> bool:
+    errors = compare_report.get("errors", [])
+    return bool(errors) and all(error.endswith(": baseline has no frames") for error in errors)
+
+
 def run_full_qa(batch_id: str, actions: list[str]) -> dict:
     manifest = load_manifest()
     batch = find_batch(manifest, batch_id)
@@ -41,11 +46,12 @@ def run_full_qa(batch_id: str, actions: list[str]) -> dict:
     compare_report = compare_batch(batch_id, actions, qa_dir / "compare_to_baseline.json")
     gate_report = gate_batch(batch_id, actions, qa_dir)
     (qa_dir / "gate_report.json").write_text(json.dumps(gate_report, indent=2), encoding="utf-8")
+    compare_ok = not compare_report["errors"] or compare_errors_are_only_missing_baselines(compare_report)
 
     report = {
         "batch": batch_id,
         "actions": actions,
-        "ok": audit_report["ok"] and not compare_report["errors"] and gate_report["ok"],
+        "ok": audit_report["ok"] and compare_ok and gate_report["ok"],
         "qa_dir": str(qa_dir),
         "reports": {
             "contact_sheet": str(qa_dir / "contact_sheet.png"),

@@ -32,6 +32,7 @@
     "walk": {"frames": 16, "fps": 14, "loop": false},
     "walk_left": {"frames": 16, "fps": 14, "loop": false},
     "cute": {"frames": 44, "fps": 24, "loop": false},
+    "return_home": {"frames": 48, "fps": 24, "loop": false},
     "drag": {"frames": 8, "fps": 5, "loop": true}
   },
   "batches": [

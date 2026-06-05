@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION = ROOT / "assets" / "production" / "desktop_cat"
 POSE_TRANSITION_ACTIONS = {"sleep_in", "wake"}
-HIGH_EXCURSION_ACTIONS = {"happy"}
+HIGH_EXCURSION_ACTIONS = {"happy", "return_home"}
 
 
 def load_json(path: Path) -> dict:
@@ -29,7 +29,23 @@ def gate_batch(batch_id: str, actions: list[str], qa_dir: Path) -> dict:
         errors.append(f"shape metrics action scope mismatch: {metrics.get('actions')} != {actions}")
     if compare.get("actions") != actions:
         errors.append(f"baseline compare action scope mismatch: {compare.get('actions')} != {actions}")
-    if metrics.get("frame_count") != compare.get("frame_count"):
+    missing_baseline_actions = [
+        error.split(":", 1)[0]
+        for error in compare.get("errors", [])
+        if error.endswith(": baseline has no frames")
+    ]
+    compare_has_only_missing_baselines = (
+        len(missing_baseline_actions) == len(compare.get("errors", []))
+    )
+    missing_baseline_frame_count = sum(
+        metrics["action_summaries"].get(action, {}).get("frame_count", 0)
+        for action in missing_baseline_actions
+    )
+    expected_compare_frame_count = metrics.get("frame_count", 0) - missing_baseline_frame_count
+    if (
+        compare.get("frame_count") != expected_compare_frame_count
+        or not compare_has_only_missing_baselines
+    ):
         errors.append("shape metrics and baseline compare frame counts differ")
 
     checks = {

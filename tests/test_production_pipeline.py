@@ -40,7 +40,7 @@ class ProductionPipelineTests(unittest.TestCase):
         self.assertIn("no_identity_drift", manifest["acceptance_gates"])
         self.assertIn("idle_compatible_first_last_frames", manifest["acceptance_gates"])
         self.assertIn("stable_v2_baseline", {batch["id"] for batch in manifest["batches"]})
-        for action in ["sleep_in", "wake", "walk", "walk_left"]:
+        for action in ["sleep_in", "wake", "walk", "walk_left", "return_home"]:
             self.assertIn(action, manifest["actions"])
         self.assertEqual(48, manifest["actions"]["happy"]["frames"])
         self.assertEqual(44, manifest["actions"]["cute"]["frames"])
@@ -48,8 +48,10 @@ class ProductionPipelineTests(unittest.TestCase):
         self.assertEqual(80, manifest["actions"]["wake"]["frames"])
         self.assertEqual(16, manifest["actions"]["walk"]["frames"])
         self.assertEqual(16, manifest["actions"]["walk_left"]["frames"])
+        self.assertEqual(48, manifest["actions"]["return_home"]["frames"])
         self.assertEqual(24, manifest["actions"]["happy"]["fps"])
         self.assertEqual(24, manifest["actions"]["cute"]["fps"])
+        self.assertEqual(24, manifest["actions"]["return_home"]["fps"])
 
     def test_prompt_pack_has_action_prompt_for_every_manifest_action(self) -> None:
         manifest = json.loads((PRODUCTION / "batch_manifest.json").read_text(encoding="utf-8"))
@@ -605,6 +607,14 @@ class ProductionPipelineTests(unittest.TestCase):
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertIn("production_batch_gate_ok", result.stdout)
+
+    def test_full_qa_allows_candidate_only_return_home_action(self) -> None:
+        sys.path.insert(0, str(ROOT / "tools"))
+        from run_production_batch_qa import run_full_qa
+
+        report = run_full_qa("20260527_motion_quality_v1", ["return_home"])
+
+        self.assertTrue(report["ok"], report)
 
     def test_full_qa_runner_refreshes_all_scoped_candidate_reports(self) -> None:
         actions = "idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,drag"
