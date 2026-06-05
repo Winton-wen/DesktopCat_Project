@@ -19,6 +19,7 @@ dist/
 
 # DesktopCat runtime smoke-test state
 desktopcat_smoke_config*/
+desktopcat_zip_extract_smoke*/
 
 # Local backups and large packaged snapshots
 backups/

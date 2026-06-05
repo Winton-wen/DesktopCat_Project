@@ -320,6 +320,29 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertIn("--test-first-launch", launcher)
         self.assertIn("test_first_launch=args.test_first_launch", launcher)
 
+    def test_gift_launcher_uses_latest_candidate_batch_without_preview_title(self) -> None:
+        launcher_path = ROOT / "gift_launcher.py"
+        self.assertTrue(launcher_path.exists())
+        launcher = launcher_path.read_text(encoding="utf-8")
+
+        self.assertIn("20260527_motion_quality_v1", launcher)
+        self.assertIn('title="DesktopCat"', launcher)
+        self.assertIn("ProductionBatchFrameSource(DEFAULT_BATCH_ID)", launcher)
+        self.assertIn("--smoke-ms", launcher)
+        self.assertNotIn("Candidate Preview", launcher)
+
+    def test_gift_build_script_creates_gift_named_exe_from_gift_launcher(self) -> None:
+        script_path = ROOT / "build_gift.ps1"
+        self.assertTrue(script_path.exists())
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertIn('AppName = "DesktopCatGift"', script)
+        self.assertIn("gift_launcher.py", script)
+        self.assertIn("20260527_motion_quality_v1", script)
+        self.assertIn("return_home", script)
+        self.assertIn("dist\\$AppName\\$AppName.exe", script)
+        self.assertNotIn("DesktopCatCandidatePreview", script)
+
     def test_rig_candidate_menu_can_reset_position(self) -> None:
         from desktop_cat import rig_app
 

@@ -190,6 +190,29 @@ Make the pet easy to give and easy to run on the partner's computer.
 - Quit works cleanly with no lingering process.
 - The packaged app is smoke-tested before delivery.
 
+### Next Gift Polish Pass
+
+The next optimization pass should make the current `DesktopCatGift` package
+feel less like a developer artifact and more like a finished personal gift.
+Adopt the following medium/high-priority improvements:
+
+- Add a short partner-facing `README_先看我.txt` to the gift package with
+  first-run, quit, and config-editing instructions.
+- Check and fix Chinese UI/menu/config text so first launch, right-click menu,
+  reminder buttons, and generated config README do not show mojibake.
+- Improve the first-launch experience with one warmer, more personal arrival
+  message and avoid immediate competing bubbles.
+- Add two offline, low-burden couple-specific context-menu interactions:
+  `我想他了` and `今天辛苦啦`.
+- Reduce packaged zip size by including only the runtime assets needed by
+  `DesktopCatGift`, especially the active candidate batch and companion message
+  files, not raw experiments, QA artifacts, old batches, or references.
+- Add a kitten app icon for the packaged executable.
+- Restore the last valid on-screen position on restart, while falling back to
+  the default corner if the saved position is off-screen.
+
+Explicitly do **not** make low-distraction mode the default in this pass.
+
 ## Priority 6: Couple-Specific Touches
 
 ### Goal
@@ -262,4 +285,3 @@ offline companion experience and gift packaging are strong.
 5. Gift-quality packaging.
 6. Couple-specific touches.
 7. Resume networked messaging only when both computers can be configured.
-
