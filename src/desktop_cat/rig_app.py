@@ -40,6 +40,8 @@ LOW_DISTRACTION_COMPANION_CHECK_MS = 60 * 60 * 1000
 RESET_JUMP_STEPS = 48
 RESET_JUMP_INTERVAL_MS = 42
 RESET_JUMP_HOP_PX = 30
+MAX_PENDING_ACTIONS = 8
+MAX_PENDING_BUBBLES = 8
 ACTION_FPS = {
     "idle": 12,
     "blink": 10,
@@ -263,14 +265,71 @@ class RigSpeechBubble:
         self.button.pack()
         self.font = tkfont.Font(family="Microsoft YaHei UI", size=10)
         self.after_id: str | None = None
+        self.pending_messages: list[dict] = []
+        self.pet_anchor_provider = None
         self.canvas_w = 1
         self.canvas_h = 1
         self.window_w = 1
         self.window_h = 1
 
     def hide(self) -> None:
+        current_after = self.after_id
+        self.after_id = None
+        if current_after:
+            try:
+                self.root.after_cancel(current_after)
+            except tk.TclError:
+                pass
         self.window.withdraw()
         self.button_window.withdraw()
+        self.show_next_queued_message()
+
+    def queue_message_if_busy(
+        self,
+        text: str,
+        pet_center_x: int,
+        pet_top_y: int,
+        button_text: str | None,
+        button_command,
+        hide_ms: int,
+    ) -> bool:
+        if self.after_id is None:
+            return False
+        if len(self.pending_messages) >= MAX_PENDING_BUBBLES:
+            self.pending_messages.pop(0)
+        self.pending_messages.append(
+            {
+                "text": text,
+                "pet_center_x": pet_center_x,
+                "pet_top_y": pet_top_y,
+                "button_text": button_text,
+                "button_command": button_command,
+                "hide_ms": hide_ms,
+            }
+        )
+        return True
+
+    def show_next_queued_message(self) -> None:
+        if not self.pending_messages:
+            return
+        message = self.pending_messages.pop(0)
+        pet_center_x, pet_top_y = (
+            self.pet_anchor_provider()
+            if self.pet_anchor_provider
+            else (message["pet_center_x"], message["pet_top_y"])
+        )
+        self.root.after(
+            80,
+            lambda: self.show(
+                message["text"],
+                pet_center_x,
+                pet_top_y,
+                button_text=message["button_text"],
+                button_command=message["button_command"],
+                hide_ms=message["hide_ms"],
+                queue_if_busy=False,
+            ),
+        )
 
     def show(
         self,
@@ -280,7 +339,17 @@ class RigSpeechBubble:
         button_text: str | None = None,
         button_command=None,
         hide_ms: int = 3200,
+        queue_if_busy: bool = True,
     ) -> None:
+        if queue_if_busy and self.queue_message_if_busy(
+            text=text,
+            pet_center_x=pet_center_x,
+            pet_top_y=pet_top_y,
+            button_text=button_text,
+            button_command=button_command,
+            hide_ms=hide_ms,
+        ):
+            return
         padding_x = 18
         padding_y = 12
         tail_h = 22
@@ -411,6 +480,7 @@ class RigDesktopCatApp:
         self.frames = frame_source or (frame_source_factory() if frame_source_factory else StableSpriteFrameSource())
         self.sprite = self.canvas.create_image(WIDTH // 2, HEIGHT // 2, anchor="center")
         self.bubble = RigSpeechBubble(self.root)
+        self.bubble.pet_anchor_provider = self.pet_anchor
         self.action = "idle"
         self.frame = 0
         self.action_until = 0.0
@@ -422,6 +492,7 @@ class RigDesktopCatApp:
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
         self.resetting_position = False
+        self.pending_actions: list[tuple[str, float]] = []
         self.time_reminders_last_shown_at: dict[str, datetime] = {}
         self.time_reminders_dismissed: set[str] = set()
         self.companion_pack = self.load_configured_companion_pack()
@@ -488,9 +559,7 @@ class RigDesktopCatApp:
         self.frame += 1
         now = time.monotonic()
         if self.action not in LOOPING_ACTIONS and self.frame >= self.action_frame_count():
-            self.action = ACTION_CHAIN.get(self.action, "idle")
-            self.frame = 0
-            self.action_until = now + random.uniform(1.2, 2.2)
+            self.finish_current_action(now)
         elif now > self.action_until and self.action == "idle" and not self.drag_start:
             self.random_idle_action(now)
         if self.action in {"happy", "happy_right"} and not self.drag_start and not self.resetting_position:
@@ -515,13 +584,39 @@ class RigDesktopCatApp:
         self.frame = 0
         self.action_until = now + random.uniform(3.0, 6.0)
 
-    def set_action(self, action: str, seconds: float) -> None:
+    def action_can_start_immediately(self, action: str, force: bool) -> bool:
+        if force or action in {"idle", "drag"}:
+            return True
+        return self.action == "idle" and not self.resetting_position and not self.drag_start
+
+    def queue_action(self, action: str, seconds: float) -> None:
+        if len(self.pending_actions) >= MAX_PENDING_ACTIONS:
+            self.pending_actions.pop(0)
+        self.pending_actions.append((action, seconds))
+
+    def start_action_now(self, action: str, seconds: float) -> None:
         self.action = action
         self.frame = 0
         self.action_until = time.monotonic() + seconds
         if action not in {"happy", "happy_right"}:
             self.happy_start = None
         self.draw()
+
+    def set_action(self, action: str, seconds: float, force: bool = False) -> bool:
+        if not self.action_can_start_immediately(action, force):
+            self.queue_action(action, seconds)
+            return False
+        self.start_action_now(action, seconds)
+        return True
+
+    def finish_current_action(self, now: float) -> None:
+        if self.pending_actions:
+            action, seconds = self.pending_actions.pop(0)
+            self.start_action_now(action, seconds)
+            return
+        self.action = ACTION_CHAIN.get(self.action, "idle")
+        self.frame = 0
+        self.action_until = now + random.uniform(1.2, 2.2)
 
     def pet_anchor(self) -> tuple[int, int]:
         return self.root.winfo_x() + WIDTH // 2, self.root.winfo_y() + (HEIGHT - DISPLAY_SIZE) // 2
@@ -598,7 +693,7 @@ class RigDesktopCatApp:
         self.resetting_position = True
         self.happy_direction = 1 if target_x >= start_x else -1
         self.happy_start = None
-        self.set_action(reset_return_action(start_x, target_x), 2.1)
+        self.set_action(reset_return_action(start_x, target_x), 2.1, force=True)
         self.animate_reset_position(
             start_x=start_x,
             start_y=start_y,
@@ -631,7 +726,7 @@ class RigDesktopCatApp:
         self.root.geometry(f"+{target_x}+{target_y}")
         self.resetting_position = False
         self.store.update_position(target_x, target_y)
-        self.set_action("idle", 1.0)
+        self.set_action("idle", 1.0, force=True)
         self.bubble.show("我跳回屏幕角落啦。", target_x + WIDTH // 2, target_y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def happy(self) -> None:
@@ -712,7 +807,7 @@ class RigDesktopCatApp:
         self.press_action = self.action
         self.drag_moved = False
         if self.action in {"sleep", "sleep_in"}:
-            self.set_action("wake", 4.0)
+            self.set_action("wake", 4.0, force=self.action == "sleep")
             self.say(TEXT["wake"])
         else:
             self.set_action("clicked", 1.4)
@@ -740,7 +835,9 @@ class RigDesktopCatApp:
         self.store.update_position(self.root.winfo_x(), self.root.winfo_y())
         if not drag_moved and press_action in {"sleep", "sleep_in"} and self.action == "wake":
             return
-        self.set_action("idle", 1.0)
+        if drag_moved:
+            self.set_action("idle", 1.0, force=True)
+            self.bubble.move_to_pet(*self.pet_anchor())
 
     def on_menu(self, event) -> None:
         menu = Menu(self.root, tearoff=0)

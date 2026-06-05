@@ -41,6 +41,55 @@ class SpeechBubblePolishTests(unittest.TestCase):
 
         self.assertGreaterEqual(rig_app.SPEECH_BUBBLE_PET_OVERLAP_PX, 58)
 
+    def test_rig_speech_bubble_queues_new_text_while_previous_text_is_visible(self) -> None:
+        from desktop_cat import rig_app
+
+        bubble = rig_app.RigSpeechBubble.__new__(rig_app.RigSpeechBubble)
+        bubble.after_id = "visible"
+        bubble.pending_messages = []
+
+        queued = bubble.queue_message_if_busy(
+            text="next",
+            pet_center_x=100,
+            pet_top_y=120,
+            button_text=None,
+            button_command=None,
+            hide_ms=3200,
+        )
+
+        self.assertTrue(queued)
+        self.assertEqual(1, len(bubble.pending_messages))
+        self.assertEqual("next", bubble.pending_messages[0]["text"])
+
+    def test_queued_speech_bubble_uses_current_pet_anchor_when_it_is_shown(self) -> None:
+        from desktop_cat import rig_app
+
+        class FakeRoot:
+            def after(self, _delay_ms, callback):
+                callback()
+
+        shown: list[tuple[str, int, int]] = []
+        bubble = rig_app.RigSpeechBubble.__new__(rig_app.RigSpeechBubble)
+        bubble.root = FakeRoot()
+        bubble.pending_messages = [
+            {
+                "text": "queued",
+                "pet_center_x": 100,
+                "pet_top_y": 120,
+                "button_text": None,
+                "button_command": None,
+                "hide_ms": 3200,
+            }
+        ]
+        bubble.pet_anchor_provider = lambda: (360, 420)
+        bubble.show = lambda text, pet_center_x, pet_top_y, **_kwargs: shown.append(
+            (text, pet_center_x, pet_top_y)
+        )
+
+        bubble.show_next_queued_message()
+
+        self.assertEqual([("queued", 360, 420)], shown)
+
 
 if __name__ == "__main__":
     unittest.main()

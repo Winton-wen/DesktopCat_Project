@@ -119,6 +119,73 @@ class RigPreviewTests(unittest.TestCase):
         sprite_app_path = ROOT / "src" / "desktop_cat" / "sprite_app.py"
         self.assertIn("class DesktopCatApp", sprite_app_path.read_text(encoding="utf-8"))
 
+    def test_non_idle_actions_queue_instead_of_interrupting_current_action(self) -> None:
+        from desktop_cat import rig_app
+
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.action = "happy"
+        app.frame = 12
+        app.pending_actions = []
+        app.happy_start = (10, 10)
+        app.draw = lambda: None
+
+        started = app.set_action("wave", 2.2)
+
+        self.assertFalse(started)
+        self.assertEqual("happy", app.action)
+        self.assertEqual(12, app.frame)
+        self.assertEqual([("wave", 2.2)], app.pending_actions)
+
+    def test_queued_action_starts_after_current_non_idle_action_finishes(self) -> None:
+        from desktop_cat import rig_app
+
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.action = "happy"
+        app.frame = 47
+        app.action_until = 0.0
+        app.pending_actions = [("wave", 2.2)]
+        app.happy_start = (10, 10)
+        app.draw = lambda: None
+
+        app.finish_current_action(123.0)
+
+        self.assertEqual("wave", app.action)
+        self.assertEqual(0, app.frame)
+        self.assertEqual([], app.pending_actions)
+
+    def test_non_drag_release_does_not_cut_short_click_animation(self) -> None:
+        from desktop_cat import rig_app
+
+        class FakeRoot:
+            def winfo_x(self) -> int:
+                return 10
+
+            def winfo_y(self) -> int:
+                return 20
+
+        class FakeStore:
+            def __init__(self) -> None:
+                self.positions: list[tuple[int, int]] = []
+
+            def update_position(self, x: int, y: int) -> None:
+                self.positions.append((x, y))
+
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.action = "clicked"
+        app.drag_start = (10, 10)
+        app.window_start = (20, 20)
+        app.press_action = "idle"
+        app.drag_moved = False
+        app.root = FakeRoot()
+        app.store = FakeStore()
+        app.pending_actions = []
+        app.draw = lambda: None
+
+        app.on_release(None)
+
+        self.assertEqual("clicked", app.action)
+        self.assertEqual([(10, 20)], app.store.positions)
+
 
 if __name__ == "__main__":
     unittest.main()
