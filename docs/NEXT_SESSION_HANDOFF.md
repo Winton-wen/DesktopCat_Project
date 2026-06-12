@@ -7,9 +7,9 @@ Updated: 2026-06-12 +08:00
 - Repo path: `E:\Project\DesktopPig_Project`
 - Remote: `https://github.com/Winton-wen/DesktopCat_Project.git`
 - Branch: `main`
-- HEAD and `origin/main`: `045a5e9 Update DesktopCat session handoff`
-- Latest pushed functional baseline: `15c1ae4 Polish DesktopCat gift package`
-- Current copywriting, anniversary, menu, icon, tests, docs, and packaging changes are local and uncommitted.
+- Latest functional release commit: `ee8785b Polish DesktopCat companion gift experience`
+- The 2026-06-12 copywriting, anniversary, menu, visual-tour, icon, direction,
+  bubble, reminder-button, tests, docs, and packaging changes are committed.
 
 ## Current Goal
 
@@ -71,52 +71,13 @@ git stash list -n 5
 
 ## Current Git State
 
-Last checked on 2026-06-11:
+Last checked on 2026-06-12 after release commit `ee8785b`:
 
 ```text
-## main...origin/main
+## main...origin/main [ahead 1 before the handoff commit and push]
 ```
 
-Tracked local modifications:
-
-```text
-assets/companion_messages/partner_default.json
-assets/gift/README_先看我.txt
-assets/gift/desktopcat.ico
-docs/NEXT_SESSION_HANDOFF.md
-src/desktop_cat/companion_messages.py
-src/desktop_cat/config.py
-src/desktop_cat/rig_app.py
-src/desktop_cat/time_reminders.py
-tests/test_companion_messages.py
-tests/test_gift_config_experience.py
-tests/test_low_distraction_mode.py
-tests/test_speech_bubble_polish.py
-tests/test_stable_sprite_route.py
-```
-
-Deleted local files replaced by the exhaustive copywriting visual tour:
-
-```text
-tests/test_candidate_feature_qa_script.py
-tools/run_candidate_feature_qa.py
-```
-
-Important untracked project files:
-
-```text
-assets/gift/desktopcat_icon_head_preview.png
-assets/gift/desktopcat_icon_size_preview.png
-docs/copywriting-message-catalog.md
-docs/target-machine-acceptance-checklist.md
-docs/superpowers/
-tests/test_copywriting_visual_tour.py
-tools/build_gift_icon.py
-tools/generate_copywriting_catalog.py
-tools/run_copywriting_visual_tour.py
-```
-
-There are also many untracked files under:
+The only intentional untracked files are experiment assets under:
 
 ```text
 assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_*
