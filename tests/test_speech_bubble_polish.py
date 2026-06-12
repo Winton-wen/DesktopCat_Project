@@ -30,11 +30,23 @@ class SpeechBubblePolishTests(unittest.TestCase):
         self.assertIn("move_button_to_pet", source)
         self.assertIn("button_text and button_command", source)
 
-    def test_companion_messages_use_longer_display_duration(self) -> None:
+    def test_reminder_button_uses_approved_light_blue_palette(self) -> None:
+        from desktop_cat import rig_app
+
+        self.assertEqual("#DCEEFF", rig_app.REMINDER_BUTTON_BG)
+        self.assertEqual("#C4E2FF", rig_app.REMINDER_BUTTON_ACTIVE_BG)
+        self.assertEqual("#28527A", rig_app.REMINDER_BUTTON_FG)
+        source = inspect.getsource(rig_app.RigSpeechBubble.__init__)
+        self.assertIn("REMINDER_BUTTON_BG", source)
+        self.assertIn("REMINDER_BUTTON_ACTIVE_BG", source)
+        self.assertIn("REMINDER_BUTTON_FG", source)
+
+    def test_companion_messages_use_short_display_duration(self) -> None:
         from desktop_cat import rig_app
 
         source = inspect.getsource(rig_app.RigDesktopCatApp.show_companion_message)
-        self.assertIn("hide_ms=12000", source)
+        self.assertIn("hide_ms=COMPANION_MESSAGE_HIDE_MS", source)
+        self.assertEqual(3000, rig_app.COMPANION_MESSAGE_HIDE_MS)
 
     def test_rig_speech_bubble_sits_lower_near_pet(self) -> None:
         from desktop_cat import rig_app

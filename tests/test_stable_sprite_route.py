@@ -139,13 +139,17 @@ class StableSpriteRouteTests(unittest.TestCase):
         from desktop_cat import rig_app
 
         menu_source = inspect.getsource(rig_app.RigDesktopCatApp.on_menu)
-        self.assertIn("向左散步", menu_source)
-        self.assertIn("向右散步", menu_source)
+        self.assertIn("向左走两步", menu_source)
+        self.assertIn("向右走两步", menu_source)
         self.assertIn("walk_left", inspect.getsource(rig_app.RigDesktopCatApp))
         self.assertIn("walk_right", inspect.getsource(rig_app.RigDesktopCatApp))
 
     def test_walk_step_does_not_snap_from_outside_safe_bounds(self) -> None:
-        from desktop_cat.rig_app import bounded_walk_direction, next_walk_x
+        from desktop_cat.rig_app import (
+            bounded_walk_direction,
+            next_walk_x,
+            walk_direction_for_step,
+        )
 
         self.assertEqual(496, next_walk_x(current_x=500, direction=-1, min_x=8, max_x=400, step=4))
         self.assertEqual(500, next_walk_x(current_x=500, direction=1, min_x=8, max_x=400, step=4))
@@ -153,6 +157,36 @@ class StableSpriteRouteTests(unittest.TestCase):
         self.assertEqual(8, next_walk_x(current_x=8, direction=-1, min_x=8, max_x=400, step=4))
         self.assertEqual(-1, bounded_walk_direction(current_x=500, preferred=1, min_x=8, max_x=400))
         self.assertEqual(1, bounded_walk_direction(current_x=0, preferred=-1, min_x=8, max_x=400))
+        self.assertEqual(
+            -1,
+            walk_direction_for_step(
+                current_x=8,
+                direction=-1,
+                min_x=8,
+                max_x=400,
+                allow_reverse=False,
+            ),
+        )
+        self.assertEqual(
+            1,
+            walk_direction_for_step(
+                current_x=400,
+                direction=1,
+                min_x=8,
+                max_x=400,
+                allow_reverse=False,
+            ),
+        )
+        self.assertEqual(
+            1,
+            walk_direction_for_step(
+                current_x=8,
+                direction=-1,
+                min_x=8,
+                max_x=400,
+                allow_reverse=True,
+            ),
+        )
 
     def test_cute_action_is_available_from_context_menu(self) -> None:
         from desktop_cat import rig_app
@@ -204,15 +238,40 @@ class StableSpriteRouteTests(unittest.TestCase):
     def test_time_reminders_match_requested_companion_windows(self) -> None:
         from desktop_cat.time_reminders import reminder_for_time
 
-        self.assertEqual("小猪猪要乖乖按时吃午饭哟！", reminder_for_time(time(11, 30)).message)
-        self.assertEqual("小猪猪要乖乖按时吃午饭哟！", reminder_for_time(time(13, 29)).message)
+        self.assertEqual(
+            "{mama_nickname}要记得按时吃午饭呀，不然呆呆和粑粑都会担心的喔՞･∞･՞",
+            reminder_for_time(time(11, 30)).message,
+        )
+        self.assertEqual(
+            "{mama_nickname}要记得按时吃午饭呀，不然呆呆和粑粑都会担心的喔՞･∞･՞",
+            reminder_for_time(time(13, 29)).message,
+        )
         self.assertIsNone(reminder_for_time(time(13, 30)))
-        self.assertEqual("小猪猪要乖乖按时吃晚饭哟！", reminder_for_time(time(17, 0)).message)
-        self.assertEqual("小猪猪要乖乖按时吃晚饭哟！", reminder_for_time(time(18, 59)).message)
-        self.assertEqual("要早点休息呀小猪猪", reminder_for_time(time(0, 0)).message)
-        self.assertEqual("要早点休息呀小猪猪", reminder_for_time(time(1, 29)).message)
-        self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(1, 30)).message)
-        self.assertEqual("小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！", reminder_for_time(time(4, 59)).message)
+        self.assertEqual(
+            "{mama_nickname}该吃晚饭啦，想吃什么可以和粑粑说呀₍⑅ᐢ..ᐢ₎",
+            reminder_for_time(time(17, 0)).message,
+        )
+        self.assertEqual(
+            "{mama_nickname}该吃晚饭啦，想吃什么可以和粑粑说呀₍⑅ᐢ..ᐢ₎",
+            reminder_for_time(time(18, 59)).message,
+        )
+        self.assertIsNone(reminder_for_time(time(19, 0)))
+        self.assertEqual(
+            "已经很晚啦，{mama_nickname}早点休息呀\n꜀(^. .^꜀  )꜆੭",
+            reminder_for_time(time(0, 0)).message,
+        )
+        self.assertEqual(
+            "已经很晚啦，{mama_nickname}早点休息呀\n꜀(^. .^꜀  )꜆੭",
+            reminder_for_time(time(1, 29)).message,
+        )
+        self.assertEqual(
+            "{mama_nickname}还在忙嘛...{pet_name}会一直陪伴{mama_nickname}呀，但是{mama_nickname}也要早点睡觉呀，熬夜记得补充水分呀。",
+            reminder_for_time(time(1, 30)).message,
+        )
+        self.assertEqual(
+            "{mama_nickname}还在忙嘛...{pet_name}会一直陪伴{mama_nickname}呀，但是{mama_nickname}也要早点睡觉呀，熬夜记得补充水分呀。",
+            reminder_for_time(time(4, 59)).message,
+        )
         self.assertIsNone(reminder_for_time(time(5, 0)))
 
     def test_time_reminders_repeat_until_current_window_is_dismissed(self) -> None:

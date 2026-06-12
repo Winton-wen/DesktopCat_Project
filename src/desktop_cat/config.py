@@ -8,40 +8,46 @@ from .paths import app_root, user_config_dir
 
 
 APP_NAME = "DesktopCat"
-PET_NAME = "\u5976\u7cd6\u732b"
-PARTNER_NICKNAME = "\u5b9d\u8d1d"
+PET_NAME = "\u5446\u5446"
+MAMA_NICKNAME = "\u9ebb\u9ebb"
+PAPA_NICKNAME = "\u7c91\u7c91"
+PARTNER_NICKNAME = MAMA_NICKNAME
 DEFAULT_COMPANION_MESSAGE_PACK = "assets/companion_messages/partner_default.json"
 USER_COMPANION_MESSAGE_PACK = "companion_messages/partner_custom.json"
 README_NAME = "README.txt"
 README_TEXT = """DesktopCat 配置说明
 
-这个文件夹保存小猫的个人设置和可编辑陪伴语料。
+呆呆是麻麻和粑粑一起养的电子小猫。
 
-config.json 是小猫设置：
-- pet_name: 小猫名字。
-- partner_nickname: 对方昵称。
-- low_distraction_mode: true 表示默认更安静，false 表示正常陪伴。
+config.json 里的称呼设置：
+- pet_name: 小猫名字，默认“呆呆”。
+- mama_nickname: 呆呆对她的称呼，默认“麻麻”。
+- papa_nickname: 呆呆对你的称呼，默认“粑粑”。
+- partner_nickname: 旧版本兼容字段，一般不用再修改。
+
+其他设置：
+- low_distraction_mode: true 表示更安静，false 表示正常陪伴。
 - companion_message_pack: 当前使用的陪伴语料文件路径。
 - first_launch_completed: 是否已经显示过首次欢迎语。
-- last_position: 小猫上次停留的位置。
+- last_position: 呆呆上次停留的位置。
 
-companion_messages/partner_custom.json 是可以编辑的陪伴语料。
-可以改 messages 里的 text 文案，也可以调整 category、cooldown_hours 和 action。
-如果改坏了，可以删除 partner_custom.json，再从右键菜单点“编辑陪伴语料”重新生成。
+companion_messages/partner_custom.json 是高级自定义陪伴语料文件。
+text 支持 {pet_name}、{mama_nickname}、{papa_nickname}。
+周年纪念日还可以使用 {anniversary_year_cn} 自动显示中文周年数。
+也可以调整 category、cooldown_hours 和 action。
+公历特殊日子使用 category=special_day 和 MM-DD 格式的 month_day，例如 07-18。
+农历特殊日子使用 category=special_day 和 MM-DD 格式的 lunar_month_day，例如 08-15。
+
+如果自定义语料改坏了，删除 partner_custom.json，程序会继续使用内置默认语料。
 """
 
-DEFAULT_MESSAGES = [
-    "\u4eca\u5929\u4e5f\u60f3\u8d34\u8d34\u4f60\u3002",
-    "\u6211\u5728\u684c\u9762\u966a\u4f60\u5440\u3002",
-    "\u5fd9\u5b8c\u8981\u8bb0\u5f97\u559d\u6c34\u3002",
-    "\u6478\u6478\u5934\uff0c\u4eca\u5929\u4e5f\u4f1a\u987a\u5229\u3002",
-    "\u770b\u5230\u6211\uff0c\u5c31\u5f53\u6211\u5728\u60f3\u4f60\u3002",
-    "\u4e0d\u8981\u592a\u7d2f\uff0c\u6211\u4f1a\u5fc3\u75bc\u3002",
-]
+DEFAULT_MESSAGES: list[str] = []
 
 @dataclass
 class CatConfig:
     pet_name: str = PET_NAME
+    mama_nickname: str = MAMA_NICKNAME
+    papa_nickname: str = PAPA_NICKNAME
     partner_nickname: str = PARTNER_NICKNAME
     messages: list[str] = field(default_factory=lambda: DEFAULT_MESSAGES.copy())
     autostart: bool = False
@@ -87,6 +93,11 @@ class ConfigStore:
         config = CatConfig()
         config.pet_name = self._text_or_default(raw.get("pet_name"), config.pet_name)
         config.partner_nickname = self._text_or_default(raw.get("partner_nickname"), config.partner_nickname)
+        config.mama_nickname = self._text_or_default(
+            raw.get("mama_nickname"),
+            config.partner_nickname,
+        )
+        config.papa_nickname = self._text_or_default(raw.get("papa_nickname"), config.papa_nickname)
         messages = raw.get("messages")
         if isinstance(messages, list) and all(isinstance(item, str) for item in messages):
             config.messages = [item for item in messages if item.strip()] or config.messages
@@ -122,6 +133,8 @@ class ConfigStore:
         self._ensure_dir()
         payload = {
             "pet_name": self.config.pet_name,
+            "mama_nickname": self.config.mama_nickname,
+            "papa_nickname": self.config.papa_nickname,
             "partner_nickname": self.config.partner_nickname,
             "messages": self.config.messages,
             "autostart": self.config.autostart,

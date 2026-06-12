@@ -5,79 +5,228 @@
     {
       "id": "morning_01",
       "category": "morning",
-      "text": "早上好呀，今天也慢慢来，不要一醒来就把自己绷太紧。",
+      "text": "早上好呀{mama_nickname}！{pet_name}来陪你开启新的一天啦꜀(^. .^꜀  )꜆੭",
       "cooldown_hours": 24,
       "action": "wave"
     },
     {
       "id": "morning_02",
       "category": "morning",
-      "text": "小猫来陪你开始今天啦，先深呼吸一下。",
+      "text": "{mama_nickname}先伸个懒腰吧，{pet_name}也要醒醒啦₍ᵔ･•･ᵔ₎",
       "cooldown_hours": 24,
       "action": "cute"
     },
     {
       "id": "lunch_01",
       "category": "lunch",
-      "text": "小猫替我监督你吃饭啦，不许随便糊弄过去。",
+      "text": "{mama_nickname}要好好吃午饭呀，{pet_name}会帮粑粑认真监督你的喔",
       "cooldown_hours": 12,
       "action": "wave"
     },
     {
       "id": "afternoon_01",
       "category": "afternoon",
-      "text": "下午也辛苦啦，累了就看小猫发一会儿呆。",
+      "text": "{mama_nickname}下午也辛苦啦，累了的话就和{pet_name}一起发一会儿呆吧₍ᵔ･•･ᵔ₎",
       "cooldown_hours": 18,
       "action": "cute"
     },
     {
       "id": "evening_01",
       "category": "evening",
-      "text": "忙了一天辛苦啦，看到小猫就当我抱你一下。",
+      "text": "{mama_nickname}辛苦一天啦，{pet_name}来贴贴你\n꜀(^. .^꜀  )꜆੭",
       "cooldown_hours": 18,
       "action": "happy"
     },
     {
       "id": "bedtime_01",
       "category": "bedtime",
-      "text": "已经很晚啦，小猫想陪你早点休息。",
+      "text": "很晚啦，{pet_name}想和{mama_nickname}一起早点睡觉呀ᶻz ₍^_ ̫ _^₎",
       "cooldown_hours": 12,
       "action": "sleep"
     },
     {
       "id": "late_night_01",
       "category": "late_night",
-      "text": "如果还没睡，小猫要皱眉了。我也会心疼的。",
+      "text": "{mama_nickname}还没睡嘛，{pet_name}好心疼{mama_nickname}\n(｡í _ ì｡)，{mama_nickname}忙完就早点休息吧。",
       "cooldown_hours": 12,
       "action": "sleep"
     },
     {
       "id": "miss_you_01",
       "category": "miss_you",
-      "text": "今天也很想你，但我们都先把眼前的事做好。",
+      "text": "{pet_name}也想{papa_nickname}啦。等以后住在一起，我们就能天天在一个家里啦。",
       "cooldown_hours": 36,
       "action": "wave"
     },
     {
       "id": "busy_support_01",
       "category": "busy_support",
-      "text": "你先忙你的，小猫会安静陪着你。",
+      "text": "{mama_nickname}先忙啵，{pet_name}会安安静静待在这里。",
       "cooldown_hours": 24,
       "action": "blink"
     },
     {
       "id": "comfort_01",
       "category": "comfort",
-      "text": "不顺利也没关系，慢慢来，我一直站在你这边。",
+      "text": "事情不顺利也没关系，{pet_name}会一直陪伴{mama_nickname}呀，有什么不开心的事情可以和粑粑说呀。",
+      "cooldown_hours": 36,
+      "action": "cute"
+    },
+    {
+      "id": "comfort_02",
+      "category": "comfort",
+      "text": "{mama_nickname}今天辛苦啦，先摸摸{pet_name}好好放松一下吧₍⑅ᐢ..ᐢ₎",
+      "cooldown_hours": 36,
+      "action": "cute"
+    },
+    {
+      "id": "comfort_03",
+      "category": "comfort",
+      "text": "忙完这一阵就休息一会儿吧，{pet_name}在这里陪{mama_nickname}哟՞･∞･՞",
       "cooldown_hours": 36,
       "action": "cute"
     },
     {
       "id": "encouragement_01",
       "category": "encouragement",
-      "text": "今天已经做得很好啦，不要只盯着还没完成的部分。",
+      "text": "今天已经做得很好啦，{mama_nickname}的努力{pet_name}都看见了喔ₒ⦁⩊⦁ₒ",
       "cooldown_hours": 36,
       "action": "happy"
+    },
+    {
+      "id": "encouragement_02",
+      "category": "encouragement",
+      "text": "{mama_nickname}已经很努力啦。喝点水，今晚也要对自己温柔一点呀⌯ᵔᗜᵔ⌯",
+      "cooldown_hours": 36,
+      "action": "happy"
+    },
+    {
+      "id": "special_anniversary_0324",
+      "category": "special_day",
+      "month_day": "03-24",
+      "text": "今天是{mama_nickname}和{papa_nickname}在一起的{anniversary_year_cn}周年纪念日，希望{mama_nickname}{papa_nickname}和{pet_name}可以永远在一起呀˶>ᗜ<˶",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_valentine_0214",
+      "category": "special_day",
+      "month_day": "02-14",
+      "text": "{mama_nickname}情人节快乐呀！{pet_name}想看{mama_nickname}和{papa_nickname}亲亲¯꒳¯",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_love_day_0520",
+      "category": "special_day",
+      "month_day": "05-20",
+      "text": "{mama_nickname}520快乐呀！{pet_name}和{papa_nickname}都爱{mama_nickname}呀៷>ᴗ<៷",
+      "cooldown_hours": 72,
+      "action": "cute"
+    },
+    {
+      "id": "special_labor_day_0501",
+      "category": "special_day",
+      "month_day": "05-01",
+      "text": "{mama_nickname}劳动节快乐呀，{pet_name}眼中的{mama_nickname}是全世界最勤劳滴(๓´˘`๓)",
+      "cooldown_hours": 72,
+      "action": "wave"
+    },
+    {
+      "id": "special_papa_birthday_0912",
+      "category": "special_day",
+      "month_day": "09-12",
+      "text": "今天是{papa_nickname}的生日耶！{pet_name}想和{mama_nickname}一起给{papa_nickname}买蛋糕៷>ᴗ<៷",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_mama_birthday_1022",
+      "category": "special_day",
+      "month_day": "10-22",
+      "text": "{mama_nickname}生日快乐呀！希望{mama_nickname}以后也要天天开心呀˶>ᗜ<˶",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_national_day_1001",
+      "category": "special_day",
+      "month_day": "10-01",
+      "text": "{mama_nickname}国庆快乐呀，终于可以休息一段时间啦꜀(^. .^꜀  )꜆੭",
+      "cooldown_hours": 72,
+      "action": "wave"
+    },
+    {
+      "id": "special_christmas_1225",
+      "category": "special_day",
+      "month_day": "12-25",
+      "text": "{mama_nickname}圣诞快乐呀，{pet_name}想把小铃铛摇给{mama_nickname}听₍ᵔ･•･ᵔ₎",
+      "cooldown_hours": 72,
+      "action": "cute"
+    },
+    {
+      "id": "special_year_end_1231",
+      "category": "special_day",
+      "month_day": "12-31",
+      "text": "{pet_name}已经忍不住期待和{mama_nickname}{papa_nickname}一起走进新的一年啦˶>ᗜ<˶",
+      "cooldown_hours": 72,
+      "action": "wave"
+    },
+    {
+      "id": "special_new_year_0101",
+      "category": "special_day",
+      "month_day": "01-01",
+      "text": "{mama_nickname}新年快乐呀，{pet_name}今年也要一直陪着{mama_nickname}和{papa_nickname}(๓´˘`๓)",
+      "cooldown_hours": 72,
+      "action": "wave"
+    },
+    {
+      "id": "special_spring_festival",
+      "category": "special_day",
+      "lunar_month_day": "01-01",
+      "text": "{mama_nickname}春节快乐呀，{pet_name}要陪{mama_nickname}和{papa_nickname}一起过年˶>ᗜ<˶",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_lantern_festival",
+      "category": "special_day",
+      "lunar_month_day": "01-15",
+      "text": "{mama_nickname}元宵节快乐呀，{pet_name}想和{mama_nickname}一起吃甜甜的汤圆(*^ω^*)",
+      "cooldown_hours": 72,
+      "action": "cute"
+    },
+    {
+      "id": "special_dragon_boat",
+      "category": "special_day",
+      "lunar_month_day": "05-05",
+      "text": "{mama_nickname}端午安康呀，{pet_name}今天也要乖乖陪{mama_nickname}꜀(^. .^꜀  )꜆੭",
+      "cooldown_hours": 72,
+      "action": "wave"
+    },
+    {
+      "id": "special_qixi",
+      "category": "special_day",
+      "lunar_month_day": "07-07",
+      "text": "{mama_nickname}七夕快乐呀，{pet_name}要用乐高积木帮{mama_nickname}和{papa_nickname}搭鹊桥¯꒳¯",
+      "cooldown_hours": 72,
+      "action": "cute"
+    },
+    {
+      "id": "special_mid_autumn",
+      "category": "special_day",
+      "lunar_month_day": "08-15",
+      "text": "{mama_nickname}中秋快乐呀，{pet_name}想陪{mama_nickname}和{papa_nickname}一起看月亮՞･∞･՞",
+      "cooldown_hours": 72,
+      "action": "happy"
+    },
+    {
+      "id": "special_double_ninth",
+      "category": "special_day",
+      "lunar_month_day": "09-09",
+      "text": "重阳节到啦，{pet_name}提醒{mama_nickname}今天也要照顾好自己呀(๓´˘`๓)",
+      "cooldown_hours": 72,
+      "action": "wave"
     }
   ]
 }

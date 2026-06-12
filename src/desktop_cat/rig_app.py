@@ -17,6 +17,7 @@ from .companion_messages import (
     CompanionMessage,
     load_default_companion_pack,
     load_companion_pack,
+    render_companion_text,
     select_companion_message,
 )
 from .config import ConfigStore
@@ -35,10 +36,17 @@ HAPPY_HOP_PX = 14
 SCREEN_MARGIN = 8
 SPEECH_BUBBLE_PET_OVERLAP_PX = 60
 DISMISS_BUTTON_GAP_PX = 6
+REMINDER_BUTTON_BG = "#DCEEFF"
+REMINDER_BUTTON_ACTIVE_BG = "#C4E2FF"
+REMINDER_BUTTON_FG = "#28527A"
 TIME_REMINDER_CHECK_MS = 5 * 60 * 1000
 LOW_DISTRACTION_COMPANION_CHECK_MS = 60 * 60 * 1000
 DEFAULT_COMPANION_START_DELAY_MS = 20 * 1000
 FIRST_LAUNCH_COMPANION_DELAY_MS = 45 * 1000
+SHORT_BUBBLE_HIDE_MS = 3000
+FIRST_LAUNCH_HIDE_MS = 10000
+TIME_REMINDER_HIDE_MS = 15000
+COMPANION_MESSAGE_HIDE_MS = 3000
 RESET_JUMP_STEPS = 48
 RESET_JUMP_INTERVAL_MS = 42
 RESET_JUMP_HOP_PX = 30
@@ -78,25 +86,23 @@ SLEEPY_IDLE_WEIGHTS = [70, 20, 10]
 
 
 TEXT = {
-    "pet": "\u6478\u6478\u5934\uff0c\u6211\u5728\u54e6\u3002",
-    "happy": "\u5f00\u5fc3\uff0c\u8df3\u4e00\u4e0b\u3002",
-    "cute": "\u770b\u6211\u53ef\u7231\u5417\uff1f",
-    "wave": "\u55e8\uff0c\u770b\u8fd9\u91cc\u3002",
-    "sleep": "\u6211\u5148\u8d34\u7740\u772f\u4e00\u4f1a\u513f\u3002",
-    "wake": "\u9192\u5566\u3002",
-    "walk_left": "\u6211\u5f80\u5de6\u8d70\u4e24\u6b65\u3002",
-    "walk_right": "\u6211\u5f80\u53f3\u8d70\u4e24\u6b65\u3002",
+    "pet": [
+        "喜欢{mama_nickname}摸我的头៷>ᴗ<៷",
+        "哎呀呀好痒呀好痒呀！",
+        "喵喵喵꜀(^. .^꜀  )꜆੭",
+    ],
+    "happy": ["{mama_nickname}看，{pet_name}跳一下！", "(*^ω^*)开心", "cchh，嘟嘟哒哒⌯ᵔᗜᵔ⌯"],
+    "cute": [
+        "{mama_nickname}看{pet_name}可爱嘛",
+        "{pet_name}最最最喜欢{mama_nickname}啦˶>ᗜ<˶",
+        "真的不和{pet_name}玩一下嘛ₒ⦁⩊⦁ₒ",
+    ],
+    "wave": ["{mama_nickname}，看这里呀。", "你好呀，我是呆呆~"],
+    "sleep": ["ᶻz ₍^_ ̫ _^₎"],
+    "wake": ["呆呆醒啦՞･∞･՞"],
+    "walk_left": ["天才在左。"],
+    "walk_right": ["疯子在右。"],
 }
-MISS_PARTNER_MESSAGES = [
-    "我也很想他呀。先抱抱你，小猫陪你等他忙完。",
-    "想他的时候就摸摸小猫，我会替他陪你一会儿。",
-    "距离有点远，但喜欢一直都在。小猫帮你记着呢。",
-]
-TIRED_TODAY_MESSAGES = [
-    "今天辛苦啦，先慢慢呼吸一下，别把自己绷太紧。",
-    "忙完这一阵就休息一下吧，小猫在这里陪你。",
-    "已经很努力啦。喝点水，摸摸头，今晚对自己温柔一点。",
-]
 
 
 def frame_sort_key(path: Path) -> tuple[int, str]:
@@ -124,6 +130,18 @@ def bounded_walk_direction(current_x: int, min_x: int, max_x: int, preferred: in
     if current_x >= max_x:
         return -1
     return -1 if preferred < 0 else 1
+
+
+def walk_direction_for_step(
+    current_x: int,
+    direction: int,
+    min_x: int,
+    max_x: int,
+    allow_reverse: bool,
+) -> int:
+    if allow_reverse:
+        return bounded_walk_direction(current_x, min_x, max_x, direction)
+    return -1 if direction < 0 else 1
 
 
 def pet_rhythm_for_time(current: clock_time) -> str:
@@ -181,7 +199,7 @@ def saved_position_or_default(
 
 
 def low_distraction_menu_label(enabled: bool) -> str:
-    return "退出低打扰模式" if enabled else "进入低打扰模式"
+    return "不用保持安静啦" if enabled else "呆呆安静一下"
 
 
 def speech_bubble_geometry(
@@ -282,14 +300,14 @@ class RigSpeechBubble:
         self.button_window.withdraw()
         self.button_window.overrideredirect(True)
         self.button_window.attributes("-topmost", True)
-        self.button_window.configure(bg="#ffdce8")
+        self.button_window.configure(bg=REMINDER_BUTTON_BG)
         self.button = tk.Button(
             self.button_window,
             text="",
-            bg="#ffdce8",
-            activebackground="#ffc7da",
-            fg="#6f2542",
-            activeforeground="#6f2542",
+            bg=REMINDER_BUTTON_BG,
+            activebackground=REMINDER_BUTTON_ACTIVE_BG,
+            fg=REMINDER_BUTTON_FG,
+            activeforeground=REMINDER_BUTTON_FG,
             font=("Microsoft YaHei UI", 9),
             relief="raised",
             bd=2,
@@ -390,9 +408,14 @@ class RigSpeechBubble:
         tail_h = 22
         border = 3
         max_text_w = 210
-        measured_text_w = self.font.measure(text)
+        logical_lines = text.splitlines() or [""]
+        measured_line_widths = [self.font.measure(line) for line in logical_lines]
+        measured_text_w = max(measured_line_widths, default=0)
         text_w = min(max_text_w, max(84, measured_text_w))
-        lines = max(1, (measured_text_w + max_text_w - 1) // max_text_w)
+        lines = sum(
+            max(1, (line_width + max_text_w - 1) // max_text_w)
+            for line_width in measured_line_widths
+        )
         text_h = self.font.metrics("linespace") * lines
         bubble_w = text_w + padding_x * 2 + border * 2
         bubble_h = text_h + padding_y * 2 + border * 2
@@ -525,6 +548,7 @@ class RigDesktopCatApp:
         self.press_action: str | None = None
         self.drag_moved = False
         self.walk_direction = 1
+        self.walk_can_reverse = True
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
         self.resetting_position = False
@@ -625,6 +649,8 @@ class RigDesktopCatApp:
         self.action = action
         self.frame = 0
         self.action_until = now + random.uniform(3.0, 6.0)
+        if action in {"happy", "happy_right"}:
+            self.say(TEXT["happy"])
 
     def action_can_start_immediately(self, action: str, force: bool) -> bool:
         if force or action in {"idle", "drag"}:
@@ -663,15 +689,28 @@ class RigDesktopCatApp:
     def pet_anchor(self) -> tuple[int, int]:
         return self.root.winfo_x() + WIDTH // 2, self.root.winfo_y() + (HEIGHT - DISPLAY_SIZE) // 2
 
-    def say(self, text: str) -> None:
-        self.bubble.show(text, *self.pet_anchor())
+    def say(self, text: str | list[str]) -> None:
+        template = random.choice(text) if isinstance(text, list) else text
+        self.bubble.show(self.render_text(template), *self.pet_anchor(), hide_ms=SHORT_BUBBLE_HIDE_MS)
+
+    def render_text(self, text: str, current: datetime | None = None) -> str:
+        return render_companion_text(
+            text,
+            pet_name=self.store.config.pet_name,
+            mama_nickname=self.store.config.mama_nickname,
+            papa_nickname=self.store.config.papa_nickname,
+            current=current,
+        )
 
     def show_first_launch_message(self) -> None:
         self.set_action("wave", 2.2, force=True)
         self.bubble.show(
-            f"{self.store.config.pet_name}来陪你啦。想你或者累的时候，摸摸小猫就好。",
+            (
+                f"{self.store.config.pet_name}来啦！我以后就是"
+                f"{self.store.config.mama_nickname}的桌面小猫啦"
+            ),
             *self.pet_anchor(),
-            hide_ms=9000,
+            hide_ms=FIRST_LAUNCH_HIDE_MS,
         )
         self.first_launch_pending = False
         if not self.test_first_launch:
@@ -679,6 +718,12 @@ class RigDesktopCatApp:
 
     def check_companion_message(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
+        if self.store.config.low_distraction_mode:
+            self.root.after(
+                LOW_DISTRACTION_COMPANION_CHECK_MS,
+                self.check_companion_message,
+            )
+            return
         message = select_companion_message(
             current,
             self.companion_pack.messages,
@@ -686,16 +731,20 @@ class RigDesktopCatApp:
         )
         if message is not None:
             self.companion_messages_last_shown_at[message.id] = current
-            self.show_companion_message(message)
-        delay_ms = LOW_DISTRACTION_COMPANION_CHECK_MS if self.store.config.low_distraction_mode else DEFAULT_COMPANION_CHECK_MS
-        self.root.after(delay_ms, self.check_companion_message)
+            self.show_companion_message(message, current=current)
+        self.root.after(DEFAULT_COMPANION_CHECK_MS, self.check_companion_message)
 
-    def show_companion_message(self, message: CompanionMessage) -> None:
+    def show_companion_message(
+        self,
+        message: CompanionMessage,
+        current: datetime | None = None,
+    ) -> None:
         action = message.action if message.action in ACTION_FPS else "wave"
         if action == "sleep":
             action = "sleep_in"
         self.set_action(action, 2.4)
-        self.bubble.show(message.text, *self.pet_anchor(), hide_ms=12000)
+        text = self.render_text(message.text, current=current)
+        self.bubble.show(text, *self.pet_anchor(), hide_ms=COMPANION_MESSAGE_HIDE_MS)
 
     def check_time_reminder(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
@@ -709,11 +758,11 @@ class RigDesktopCatApp:
         ):
             self.time_reminders_last_shown_at[reminder_key] = current
             self.bubble.show(
-                reminder.message,
+                self.render_text(reminder.message),
                 *self.pet_anchor(),
-                button_text="谢谢小猫的关心，不用再提醒啦",
+                button_text="谢谢呆呆的关心，不用再提醒啦",
                 button_command=lambda key=reminder_key: self.dismiss_time_reminder(key),
-                hide_ms=30000,
+                hide_ms=TIME_REMINDER_HIDE_MS,
             )
         self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
 
@@ -723,17 +772,15 @@ class RigDesktopCatApp:
     def toggle_low_distraction_mode(self) -> None:
         enabled = not self.store.config.low_distraction_mode
         self.store.update_low_distraction_mode(enabled)
-        self.say("低打扰模式已开启。" if enabled else "低打扰模式已关闭。")
+        self.say(
+            "{pet_name}会乖乖安静地陪着{mama_nickname}\n꜀(^. .^꜀  )꜆੭"
+            if enabled
+            else "呆呆要和麻麻玩！"
+        )
 
     def show_gift_interaction(self, text: str, action: str = "cute") -> None:
         self.set_action(action, 2.2)
-        self.bubble.show(text, *self.pet_anchor(), hide_ms=10000)
-
-    def miss_partner(self) -> None:
-        self.show_gift_interaction(random.choice(MISS_PARTNER_MESSAGES), action="wave")
-
-    def tired_today(self) -> None:
-        self.show_gift_interaction(random.choice(TIRED_TODAY_MESSAGES), action="cute")
+        self.bubble.show(self.render_text(text), *self.pet_anchor(), hide_ms=SHORT_BUBBLE_HIDE_MS)
 
     def open_config(self) -> None:
         os.startfile(str(self.store.open_file()))
@@ -785,13 +832,24 @@ class RigDesktopCatApp:
         self.resetting_position = False
         self.store.update_position(target_x, target_y)
         self.set_action("idle", 1.0, force=True)
-        self.bubble.show("我跳回屏幕角落啦。", target_x + WIDTH // 2, target_y + (HEIGHT - DISPLAY_SIZE) // 2)
+        self.bubble.show(
+            self.render_text("{pet_name}跳回屏幕角落啦。"),
+            target_x + WIDTH // 2,
+            target_y + (HEIGHT - DISPLAY_SIZE) // 2,
+        )
 
     def happy(self) -> None:
+        self.prepare_happy_action()
+        self.say(TEXT["happy"])
+
+    def prepare_happy_action(self, force: bool = False) -> bool:
         self.happy_direction = self.next_horizontal_direction()
         self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
-        self.set_action(self.happy_action_for_direction(self.happy_direction), 2.0)
-        self.say(TEXT["happy"])
+        return self.set_action(
+            self.happy_action_for_direction(self.happy_direction),
+            2.0,
+            force=force,
+        )
 
     def cute(self) -> None:
         self.set_action("cute", 1.9)
@@ -806,21 +864,23 @@ class RigDesktopCatApp:
         self.say(TEXT["sleep"])
 
     def walk_right(self) -> None:
-        self.walk_direction = self.next_horizontal_direction(1)
-        self.set_action("walk" if self.walk_direction > 0 else "walk_left", 1.8)
+        self.walk_direction = 1
+        self.walk_can_reverse = False
+        self.set_action("walk", 1.8)
         self.say(TEXT["walk_right"])
 
     def walk_left(self) -> None:
-        self.walk_direction = self.next_horizontal_direction(-1)
-        self.set_action("walk_left" if self.walk_direction < 0 else "walk", 1.8)
+        self.walk_direction = -1
+        self.walk_can_reverse = False
+        self.set_action("walk_left", 1.8)
         self.say(TEXT["walk_left"])
 
     def walk(self) -> None:
         direction = self.next_horizontal_direction(random.choice([-1, 1]))
-        if direction > 0:
-            self.walk_right()
-        else:
-            self.walk_left()
+        self.walk_direction = direction
+        self.walk_can_reverse = True
+        self.set_action("walk" if direction > 0 else "walk_left", 1.8)
+        self.say(TEXT["walk_right"] if direction > 0 else TEXT["walk_left"])
 
     def next_horizontal_direction(self, preferred: int | None = None) -> int:
         current_x = self.root.winfo_x()
@@ -839,7 +899,13 @@ class RigDesktopCatApp:
         current_x = self.root.winfo_x()
         y = self.root.winfo_y()
         max_x = self.root.winfo_screenwidth() - WIDTH - SCREEN_MARGIN
-        self.walk_direction = bounded_walk_direction(current_x, SCREEN_MARGIN, max_x, self.walk_direction)
+        self.walk_direction = walk_direction_for_step(
+            current_x,
+            self.walk_direction,
+            SCREEN_MARGIN,
+            max_x,
+            self.walk_can_reverse,
+        )
         self.action = "walk_left" if self.walk_direction < 0 else "walk"
         x = next_walk_x(current_x, self.walk_direction, SCREEN_MARGIN, max_x)
         self.root.geometry(f"+{x}+{y}")
@@ -902,23 +968,17 @@ class RigDesktopCatApp:
         menu.add_command(label="\u5f00\u5fc3\u4e00\u4e0b", command=self.happy)
         menu.add_command(label="卖萌一下", command=self.cute)
         menu.add_command(label="\u6253\u4e2a\u62db\u547c", command=self.wave)
-        menu.add_command(label="向左散步", command=self.walk_left)
-        menu.add_command(label="向右散步", command=self.walk_right)
-        menu.add_command(label="\u8d34\u7740\u7761\u4f1a\u513f", command=self.sleep)
-        menu.add_separator()
-        menu.add_command(label="我想他了", command=self.miss_partner)
-        menu.add_command(label="今天辛苦啦", command=self.tired_today)
+        menu.add_command(label="向左走两步", command=self.walk_left)
+        menu.add_command(label="向右走两步", command=self.walk_right)
+        menu.add_command(label="睡一会儿", command=self.sleep)
         menu.add_separator()
         menu.add_command(
             label=low_distraction_menu_label(self.store.config.low_distraction_mode),
             command=self.toggle_low_distraction_mode,
         )
         menu.add_command(label="回到屏幕角落", command=self.reset_position)
-        menu.add_command(label="打开配置文件", command=self.open_config)
-        menu.add_command(label="打开配置文件夹", command=self.open_config_folder)
-        menu.add_command(label="编辑陪伴语料", command=self.open_companion_message_pack)
         menu.add_separator()
-        menu.add_command(label="\u9000\u51fa rig \u9884\u89c8", command=self.quit)
+        menu.add_command(label="退出", command=self.quit)
         menu.tk_popup(event.x_root, event.y_root)
 
     def quit(self) -> None:

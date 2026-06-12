@@ -68,8 +68,8 @@ class LowDistractionModeTests(unittest.TestCase):
     def test_low_distraction_menu_label_has_enter_and_exit_states(self) -> None:
         from desktop_cat.rig_app import low_distraction_menu_label
 
-        self.assertEqual("进入低打扰模式", low_distraction_menu_label(False))
-        self.assertEqual("退出低打扰模式", low_distraction_menu_label(True))
+        self.assertEqual("呆呆安静一下", low_distraction_menu_label(False))
+        self.assertEqual("不用保持安静啦", low_distraction_menu_label(True))
 
 
 if __name__ == "__main__":

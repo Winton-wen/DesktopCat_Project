@@ -1,38 +1,47 @@
 # DesktopCat / DesktopPig Next Session Handoff
 
-Updated: 2026-06-05 16:10 +08:00
+Updated: 2026-06-12 +08:00
 
 ## Project
 
 - Repo path: `E:\Project\DesktopPig_Project`
 - Remote: `https://github.com/Winton-wen/DesktopCat_Project.git`
 - Branch: `main`
-- Current functional pushed HEAD: `15c1ae4 Polish DesktopCat gift package`
-- `main` is aligned with `origin/main` at `15c1ae4` before this handoff-only update.
+- HEAD and `origin/main`: `045a5e9 Update DesktopCat session handoff`
+- Latest pushed functional baseline: `15c1ae4 Polish DesktopCat gift package`
+- Current copywriting, anniversary, menu, icon, tests, docs, and packaging changes are local and uncommitted.
 
 ## Current Goal
 
-Continue building a QQ-pet-level desktop cat for a long-distance relationship:
-**polished sprite pet first -> low-burden companion behaviors -> gift-quality packaging**.
+Build a polished, gentle DesktopCat named “呆呆” as the electronic kitten that
+麻麻 and 粑粑 raise together while living apart:
 
-The pet should feel gentle, personal, non-disruptive, and gift-like. Avoid heavy
-raising systems, shops, currencies, high-frequency notifications, AI chat as the
-main experience, and anything that makes the partner maintain another app.
+```text
+polished sprite pet first -> low-burden companion behaviors -> gift-quality packaging
+```
+
+The pet should feel warm, personal, quiet, and gift-like. Avoid heavy raising
+systems, currencies, shops, frequent notifications, maintenance burden, and AI
+chat as the main experience.
 
 ## Must Read First
 
-At the start of the next window, read:
+Read these before making changes:
 
 ```text
 docs/NEXT_SESSION_HANDOFF.md
 docs/character-spec.md
 docs/animation-contract-v2.md
 docs/companion-experience-roadmap.md
+docs/copywriting-message-catalog.md
+docs/target-machine-acceptance-checklist.md
 assets/production/desktop_cat/batch_manifest.json
+assets/companion_messages/partner_default.json
 candidate_launcher.py
 gift_launcher.py
 build_gift.ps1
-tools/run_candidate_feature_qa.py
+tools/run_copywriting_visual_tour.py
+tools/generate_copywriting_catalog.py
 src/desktop_cat/rig_app.py
 src/desktop_cat/companion_messages.py
 src/desktop_cat/config.py
@@ -50,52 +59,70 @@ git stash list -n 5
 ## User Preferences And Safety Rules
 
 - Do not commit or push unless the user explicitly asks.
-- Do not delete or break stable runnable versions.
-- Keep the current route: full transparent PNG sprite assets remain stable and QA-able.
-- Visual QA matters more than tests alone for animation/UI behavior.
-- Preserve untracked `raw/wake_*` experiment assets unless the user explicitly asks to clean them.
-- Do not accidentally stage `raw/wake_*`.
-- `docs/NEXT_SESSION_HANDOFF.md` may be updated and committed only when the user requests handoff.
-- The Supabase live-message prototype is deferred. Do not restore `stash@{0}` unless explicitly asked.
-- Prefer offline-first companion value before networked features.
-- Low-distraction mode exists, but the user explicitly rejected making it the default.
+- Do not restore `stash@{0}: cat messaging mvp WIP` unless explicitly asked.
+- Do not delete, stage, or commit untracked `raw/wake_*` experiment assets.
+- Do not break or replace the accepted sprite animation baseline.
+- Keep the experience offline-first and low burden.
+- Low-distraction mode must not be the default.
+- In low-distraction mode, automatic companion speech is disabled.
+- Visual/manual target-machine QA remains necessary even when tests pass.
+- PowerShell may display valid UTF-8 Chinese as mojibake; verify actual files/UI
+  before treating terminal output as corruption.
 
 ## Current Git State
 
-Last checked before this handoff update:
+Last checked on 2026-06-11:
 
 ```text
 ## main...origin/main
- M docs/NEXT_SESSION_HANDOFF.md
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_12poses_v4_generated_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_12poses_v4_generated_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_16poses_v7_clean_eyes_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_16poses_v7_clean_eyes_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_20poses_v5_generated_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_20poses_v5_generated_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_38poses_v6_generated_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_38poses_v6_generated_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_eye_open_settle_v1_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_eye_open_settle_v1_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_keyposes/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_front_middle_v9_keyposes_scaled/
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_full_v8_generated_chromakey.png
-?? assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_full_v8_generated_keyposes/
 ```
 
-Recent commits:
+Tracked local modifications:
 
 ```text
-15c1ae4 (HEAD -> main, origin/main) Polish DesktopCat gift package
-384f862 Add gift-ready DesktopCat packaging
-fd1fd88 Queue pet actions and speech bubbles
-5d2ed19 Add return home animation action
-d31191d Add candidate feature QA tour
-ea7a2b1 Add gift-ready companion config flow
-3f22b4d Move reminder dismiss button below pet
-a007fac Repeat reminders until dismissed
+assets/companion_messages/partner_default.json
+assets/gift/README_先看我.txt
+assets/gift/desktopcat.ico
+docs/NEXT_SESSION_HANDOFF.md
+src/desktop_cat/companion_messages.py
+src/desktop_cat/config.py
+src/desktop_cat/rig_app.py
+src/desktop_cat/time_reminders.py
+tests/test_companion_messages.py
+tests/test_gift_config_experience.py
+tests/test_low_distraction_mode.py
+tests/test_speech_bubble_polish.py
+tests/test_stable_sprite_route.py
 ```
+
+Deleted local files replaced by the exhaustive copywriting visual tour:
+
+```text
+tests/test_candidate_feature_qa_script.py
+tools/run_candidate_feature_qa.py
+```
+
+Important untracked project files:
+
+```text
+assets/gift/desktopcat_icon_head_preview.png
+assets/gift/desktopcat_icon_size_preview.png
+docs/copywriting-message-catalog.md
+docs/target-machine-acceptance-checklist.md
+docs/superpowers/
+tests/test_copywriting_visual_tour.py
+tools/build_gift_icon.py
+tools/generate_copywriting_catalog.py
+tools/run_copywriting_visual_tour.py
+```
+
+There are also many untracked files under:
+
+```text
+assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_*
+```
+
+Treat those as experiment material and never stage them accidentally.
 
 Deferred stash:
 
@@ -103,42 +130,157 @@ Deferred stash:
 stash@{0}: On main: cat messaging mvp WIP
 ```
 
-Do not apply this stash unless the user explicitly asks to resume Supabase partner messaging.
+## Accepted Animation And Runtime Baseline
 
-## Accepted Current State
+- Active batch: `20260527_motion_quality_v1`
+- Gift entrypoint: `gift_launcher.py`
+- Preview entrypoint: `candidate_launcher.py`
+- Clean frames:
+  `assets/production/desktop_cat/batches/20260527_motion_quality_v1/clean`
+- Wake remains the accepted 80-frame, 32fps route.
+- Do not resume the rejected 96-frame wake expansion.
+- Non-idle actions and speech bubbles queue instead of interrupting each other.
+- Drag remains immediate.
+- Clicking during sleep can wake immediately.
+- `return_home` remains the accepted lively jump-back behavior.
+- Last valid screen position is restored; invalid/off-screen positions fall back
+  to the default corner.
 
-### Active Candidate Batch
+## Current Companion Narrative
 
-- Active candidate batch: `20260527_motion_quality_v1`
-- Runtime preview: `candidate_launcher.py`
-- Gift runtime entrypoint: `gift_launcher.py`
-- Source frames: `assets/production/desktop_cat/batches/20260527_motion_quality_v1/clean`
-- Wake remains `80` frames at `32fps`.
-- The rejected `96` frame wake expansion remains rejected; do not resume that direction.
+- 呆呆 is not 粑粑’s avatar.
+- 呆呆 is the electronic kitten that 麻麻 and 粑粑 raise together.
+- Default identities:
+  - `pet_name`: `呆呆`
+  - `mama_nickname`: `麻麻`
+  - `papa_nickname`: `粑粑`
+- Full editable corpus and trigger documentation:
+  `docs/copywriting-message-catalog.md`
+- Runtime message pack:
+  `assets/companion_messages/partner_default.json`
+- Old `DEFAULT_MESSAGES` copy has been removed.
 
-### Runtime Behavior
+## Automatic Companion Message Rules
 
-- Non-idle actions now queue instead of interrupting current non-idle actions.
-- Speech bubbles now queue instead of immediately replacing visible bubbles.
-- Queued bubbles use the current pet anchor when displayed, fixing post-drag bubble jumps.
-- Drag remains immediate and responsive.
-- Sleep-loop click can still wake immediately.
-- `return_home` uses the committed lively jump-back behavior; the attempted walk-only replacement was reverted.
-- Reset-to-corner still prefers `return_home` when returning to the right-side default corner.
-- Last valid on-screen position is restored on restart; off-screen saved positions fall back to the default corner.
+- Special-day messages have highest priority.
+- Outside low-distraction mode, the candidate pool combines:
+  - messages for the current time category
+  - `miss_you`
+  - `busy_support`
+  - `comfort`
+  - `encouragement`
+- A random due message is selected from that combined pool.
+- Messages from unrelated time-specific categories are not mixed in.
+- Cooldowns still apply per message ID.
+- In low-distraction mode, automatic companion messages are skipped entirely.
+- Fixed lunch/dinner/bedtime/late-night reminders remain separate.
 
-### Gift Package
-
-Current polished gift artifact:
+Time categories:
 
 ```text
-dist/DesktopCatGift_20260605_polished.zip
+morning:    07:00-11:30
+lunch:      11:30-13:30
+afternoon:  13:30-18:00
+evening:    18:00-22:30
+late_night: 01:30-05:00
+bedtime:    all remaining times
+```
+
+Bubble durations:
+
+```text
+first launch:             10 seconds
+basic/state interactions: 3 seconds
+automatic companion:      3 seconds
+fixed-time reminders:     15 seconds
+```
+
+## Special Days And Anniversary
+
+Public/personal special-day copy includes:
+
+- Anniversary: March 24
+- 粑粑 birthday: September 12
+- 麻麻 birthday: October 22
+- New Year, Valentine’s Day, Labor Day, 520, National Day, Christmas, year end
+- Lunar Spring Festival, Lantern Festival, Dragon Boat Festival, Qixi,
+  Mid-Autumn Festival, Double Ninth Festival
+
+Anniversary template:
+
+```text
+今天是{mama_nickname}和{papa_nickname}在一起的{anniversary_year_cn}周年纪念日，希望{mama_nickname}{papa_nickname}和{pet_name}可以永远在一起呀˶>ᗜ<˶
+```
+
+`{anniversary_year_cn}` is calculated from the system year using:
+
+```text
+anniversary number = current year - 2024
+```
+
+Examples:
+
+```text
+2026-03-24 -> 二周年
+2027-03-24 -> 三周年
+```
+
+Lunar special-day conversion currently has an internal 2026-2030 table.
+
+## Current Frontend Menu
+
+Visible right-click commands:
+
+```text
+开心一下
+卖萌一下
+打个招呼
+向左走两步
+向右走两步
+睡一会儿
+呆呆安静一下 / 不用保持安静啦
+回到屏幕角落
+退出
+```
+
+These backend-oriented commands were intentionally removed from the visible
+menu:
+
+```text
+打开配置文件
+打开配置文件夹
+编辑陪伴语料
+```
+
+Backend helper methods and config files still exist; only the recipient-facing
+menu entries were removed.
+
+## Gift Icon And Packaging
+
+- EXE icon uses a close-up 呆呆 head rather than the full body:
+  `assets/gift/desktopcat.ico`
+- Icon generator: `tools/build_gift_icon.py`
+- Preview images:
+  - `assets/gift/desktopcat_icon_head_preview.png`
+  - `assets/gift/desktopcat_icon_size_preview.png`
+- Partner README no longer exposes backend/config editing commands.
+
+Latest deliverable:
+
+```text
+dist/DesktopCatGift_20260612_polished.zip
 ```
 
 Size:
 
 ```text
-82,798,481 bytes
+82,728,010 bytes
+```
+
+SHA256:
+
+```text
+2DA08358932C00531EF2480CF28BA091A1DA54414EF14F80944368BA8FBFFB81
 ```
 
 Unzipped executable:
@@ -147,166 +289,222 @@ Unzipped executable:
 dist/DesktopCatGift/DesktopCatGift.exe
 ```
 
-Partner-facing README:
-
-```text
-dist/DesktopCatGift/README_先看我.txt
-assets/gift/README_先看我.txt
-```
-
-Gift polish now includes:
-
-- Partner-facing README instructions.
-- Kitten app icon: `assets/gift/desktopcat.ico`.
-- Slimmed packaging: `build_gift.ps1` packages only the active batch clean frames, companion messages, and gift assets.
-- Warmer first-launch message with delayed companion-message start.
-- Right-click couple interactions:
-  - `我想他了`
-  - `今天辛苦啦`
-- Chinese runtime strings verified as readable in Python; terminal mojibake is a display issue unless UI text is visibly wrong.
-
-### Offline Companion Flow
-
-- Offline message pack: `assets/companion_messages/partner_default.json`
-- User-editable copy is created at config-time as `companion_messages/partner_custom.json`.
-- Bad configured custom packs fall back to default:
-  - malformed JSON
-  - empty `messages`
-  - all-invalid message entries
-
-### Low-Distraction And Time Rhythm
-
-- `low_distraction_mode` exists in config and can be toggled from the context menu.
-- Do not make low-distraction mode default unless the user reverses the decision.
-- Candidate preview examples:
-
-```powershell
-python candidate_launcher.py 20260527_motion_quality_v1 --low-distraction
-python candidate_launcher.py 20260527_motion_quality_v1 --test-rhythm-time 02:30
-python candidate_launcher.py 20260527_motion_quality_v1 --test-rhythm-time 20:30 --low-distraction
-```
+`dist/` and zip files are ignored and are not committed.
 
 ## Validation Already Run
 
-Full relevant tests:
+Direction, bubble, copy, and reminder-button polish completed on 2026-06-12:
+
+- Explicit left/right menu commands no longer reverse at screen edges; they
+  stay in the requested orientation and stop moving when blocked.
+- Autonomous walking still turns inward at screen edges.
+- The visual tour now uses the runtime happy-direction preparation on every
+  happy display/replay.
+- Visual-tour metadata is shown in a separate status window and no longer
+  changes the real speech-bubble wrapping.
+- Four reviewed emoticon messages use explicit line breaks.
+- Reminder buttons use `#DCEEFF`, `#C4E2FF`, and `#28527A`.
+
+Focused regression result:
+
+```text
+67 passed
+```
+
+Current full-suite result:
+
+```text
+158 passed
+```
+
+Current full suite after adding and polishing the exhaustive copywriting visual tour:
 
 ```powershell
-python -m pytest tests\test_stable_sprite_route.py tests\test_production_pipeline.py tests\test_rig_preview.py tests\test_companion_messages.py tests\test_low_distraction_mode.py tests\test_time_rhythm.py tests\test_speech_bubble_polish.py tests\test_gift_config_experience.py tests\test_candidate_feature_qa_script.py
+python -m pytest -q
 ```
 
 Result:
 
 ```text
-115 passed
+158 passed
 ```
 
-Gift build:
+Copywriting visual-tour collection:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\build_gift.ps1
+python tools\run_copywriting_visual_tour.py --list
 ```
 
 Result:
 
 ```text
-production_batch_full_qa_ok batch=20260527_motion_quality_v1 actions=idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,return_home,drag
-Gift build complete: dist\DesktopCatGift\DesktopCatGift.exe
-Batch: 20260527_motion_quality_v1
+copywriting_visual_tour_items=53
 ```
 
-Zip package smoke:
+The 53 items include the first-launch message, every basic interaction template,
+three state messages, four fixed reminders, every normal companion message, and
+every Gregorian/lunar special-day message.
+
+Copywriting visual-tour GUI smoke:
 
 ```powershell
-tar -xf dist\DesktopCatGift_20260605_polished.zip -C desktopcat_zip_extract_smoke_polished_20260605
-.\desktopcat_zip_extract_smoke_polished_20260605\DesktopCatGift\DesktopCatGift.exe --smoke-ms 3000
+python tools\run_copywriting_visual_tour.py --smoke
+```
+
+Result: the real candidate window opened, displayed the first labeled item,
+closed automatically, and left no DesktopCat process running.
+
+Previous gift-package validation, completed before the visual-tour replacement:
+
+Full suite:
+
+```powershell
+python -m pytest -q
 ```
 
 Result:
 
 ```text
-No lingering DesktopCatGift process.
-desktopcat_smoke_config_gift_polished_zip_exe/config.json was generated.
+149 passed
 ```
 
-Candidate visible smoke:
-
-```powershell
-python tools\run_candidate_feature_qa.py --smoke
-```
-
-Result:
+Focused final document/message suite:
 
 ```text
-candidate_feature_qa_report=E:\Project\DesktopPig_Project\qa_reports\candidate_feature_qa_20260605_160220.txt
-71 passed in smoke pytest subset
-production_batch_full_qa_ok batch=20260527_motion_quality_v1 actions=idle,blink,wake,return_home
+80 passed
 ```
 
-## Known Issues / Watch Points
-
-- `raw/wake_*` files are experiment material. Do not stage them by accident.
-- `docs/NEXT_SESSION_HANDOFF.md` is expected to be changed only by handoff requests.
-- Some PowerShell output displays Chinese as mojibake. Check actual UI/runtime strings before treating it as a bug.
-- QA tools write to shared `assets/production/desktop_cat/qa/<batch>` directories. Avoid running multiple production QA scopes in parallel.
-- `return_home` is accepted as lively jump-back behavior for now, but it is still synthesized, not a final hand-authored pose-sheet action.
-- `dist/` and zip files are ignored. The deliverable exists locally but is not committed.
-- PyInstaller may need elevated permission in this environment because it can hit permission errors reading user site-packages.
-
-## Next Recommended Steps
-
-The project is now ready to deliver the polished gift package:
-
-```text
-dist/DesktopCatGift_20260605_polished.zip
-```
-
-Recommended next work, only after the user wants more polish:
-
-1. Manually test the polished zip on the target machine if possible.
-2. Confirm first-launch UI text, right-click menu Chinese text, drag behavior, reset-to-corner, and quit behavior visually.
-3. If the gift is accepted, stop adding features for now.
-4. If continuing development, add only low-burden personal touches such as special-day messages or a meet-again countdown.
-5. Resume Supabase/network messaging only when both computers can be configured directly.
-
-## Useful Commands
-
-Manual candidate preview:
+Historical backend candidate QA, run before the old combined QA script was
+replaced by the exhaustive copywriting visual tour:
 
 ```powershell
-python candidate_launcher.py 20260527_motion_quality_v1
-```
-
-Gift build:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\build_gift.ps1
-```
-
-Gift smoke from built executable:
-
-```powershell
-$env:DESKTOPCAT_CONFIG_DIR = Join-Path (Get-Location) 'desktopcat_smoke_config_gift_exe'
-.\dist\DesktopCatGift\DesktopCatGift.exe --smoke-ms 3000
-Remove-Item Env:DESKTOPCAT_CONFIG_DIR
-```
-
-Candidate feature QA:
-
-```powershell
-python tools\run_candidate_feature_qa.py --smoke
 python tools\run_candidate_feature_qa.py --backend-only --fast
 ```
 
-Full relevant tests:
+Result:
 
-```powershell
-python -m pytest tests\test_stable_sprite_route.py tests\test_production_pipeline.py tests\test_rig_preview.py tests\test_companion_messages.py tests\test_low_distraction_mode.py tests\test_time_rhythm.py tests\test_speech_bubble_polish.py tests\test_gift_config_experience.py tests\test_candidate_feature_qa_script.py
+```text
+[PASS] pytest
+[PASS] production-batch-qa
+qa_reports/candidate_feature_qa_20260610_215949.txt
 ```
 
-Full candidate production QA:
+Historical GUI candidate smoke from the same retired script:
+
+```powershell
+python tools\run_candidate_feature_qa.py --smoke --fast
+```
+
+Result:
+
+```text
+qa_reports/candidate_feature_qa_20260610_220442.txt
+```
+
+Gift build:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build_gift.ps1
+```
+
+Result:
+
+```text
+production_batch_full_qa_ok
+Gift build complete: dist\DesktopCatGift\DesktopCatGift.exe
+```
+
+Final zip was expanded successfully, contained the EXE and Chinese README, and
+the extracted EXE passed:
+
+```powershell
+DesktopCatGift.exe --smoke-ms 3000
+```
+
+No lingering DesktopCat process remained.
+
+`git diff --check` reported no whitespace errors; only expected Windows
+LF/CRLF warnings.
+
+## Known Issues / Watch Points
+
+- Target-machine manual acceptance has not yet been performed on the recipient’s
+  actual computer.
+- Lunar holiday conversion stops after 2030 unless extended.
+- `return_home` is accepted but synthesized rather than a final hand-authored
+  pose-sheet action.
+- PyInstaller or zip overwrite may require elevated workspace permissions.
+- The full copywriting catalog is generated by
+  `tools/generate_copywriting_catalog.py`; regenerate it after changing runtime
+  copy, README text, menu labels, or trigger rules.
+- Do not run multiple production QA scopes in parallel because they write to
+  shared QA directories.
+
+## Next Recommended Steps
+
+The project passed local manual visual acceptance and release packaging on
+2026-06-12. The remaining step is delivery and, if available, a final smoke on
+the recipient's Windows machine.
+
+1. Test `dist/DesktopCatGift_20260612_polished.zip` on the target Windows
+   machine.
+2. Confirm first launch, 10-second welcome, Chinese text, dragging, right-click
+   menu, low-distraction toggle, return to corner, icon size, and clean exit.
+3. Confirm the three backend menu entries are absent.
+4. Confirm normal mode produces varied automatic speech over time and
+   low-distraction mode produces no automatic companion speech.
+5. Stop adding features unless target-machine acceptance finds a concrete
+   release blocker.
+
+## Useful Commands
+
+Regenerate corpus documentation:
+
+```powershell
+$env:PYTHONPATH='src'
+python tools\generate_copywriting_catalog.py
+```
+
+Full tests:
+
+```powershell
+python -m pytest -q
+```
+
+Production batch QA:
 
 ```powershell
 python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --actions idle,blink,wave,clicked,happy,sleep_in,sleep,wake,walk,walk_left,cute,return_home,drag
+```
+
+Complete copywriting visual tour:
+
+```powershell
+python tools\run_copywriting_visual_tour.py
+```
+
+List every visual-tour item without opening the GUI:
+
+```powershell
+python tools\run_copywriting_visual_tour.py --list
+```
+
+Visual-tour GUI smoke:
+
+```powershell
+python tools\run_copywriting_visual_tour.py --smoke
+```
+
+Build gift:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build_gift.ps1
+```
+
+Candidate preview:
+
+```powershell
+python candidate_launcher.py 20260527_motion_quality_v1
 ```
 
 ## New Window Prompt
@@ -314,11 +512,11 @@ python tools\run_production_batch_qa.py --batch 20260527_motion_quality_v1 --act
 ```text
 请先读取并遵循 E:\Project\DesktopPig_Project\docs\NEXT_SESSION_HANDOFF.md。
 
-我们继续 DesktopCat / DesktopPig 项目，仓库路径是 E:\Project\DesktopPig_Project。当前路线是 polished sprite pet first -> low-burden companion behaviors -> gift-quality packaging，目标是给异地对象一个温柔、不打扰、像礼物一样的小猫桌宠。
+我们继续 DesktopCat / DesktopPig 项目，仓库路径是 E:\Project\DesktopPig_Project。目标是把麻麻和粑粑一起养的电子小猫“呆呆”做成温柔、不打扰、像礼物一样的桌宠。
 
-请先恢复上下文：读取 docs/NEXT_SESSION_HANDOFF.md、docs/character-spec.md、docs/animation-contract-v2.md、docs/companion-experience-roadmap.md、assets/production/desktop_cat/batch_manifest.json、candidate_launcher.py、gift_launcher.py、build_gift.ps1、tools/run_candidate_feature_qa.py、src/desktop_cat/rig_app.py、src/desktop_cat/config.py、src/desktop_cat/companion_messages.py、src/desktop_cat/time_reminders.py；然后检查 git status --short --branch、git log -8 --oneline --decorate、git stash list -n 5。
+请先恢复上下文：读取 handoff 中“Must Read First”列出的文件，然后检查 git status --short --branch、git log -8 --oneline --decorate、git stash list -n 5。
 
-当前功能版已推送到 main/origin/main：15c1ae4 Polish DesktopCat gift package。最新可交付礼物包是 dist/DesktopCatGift_20260605_polished.zip，已通过 115 个相关测试、build_gift.ps1 构建、zip 解压 smoke、candidate visible smoke。Supabase 传话原型仍在 stash@{0}: cat messaging mvp WIP，不要恢复，除非我明确要求。raw/wake_* 实验素材不要误提交。
+最新语料、周年计算、菜单精简、头像图标、全部语料视觉巡演和包装改动已完成。最新可交付包是 dist/DesktopCatGift_20260612_polished.zip，SHA256 为 2DA08358932C00531EF2480CF28BA091A1DA54414EF14F80944368BA8FBFFB81，已通过 158 个测试、53 条语料巡演 smoke、生产批次 QA、构建、zip 解压和构建版/解压版 exe smoke。
 
-下一步优先级：如果只是交付礼物，先不要继续加功能；如需继续优化，先做目标机器手动验收，确认首次启动、右键菜单、拖拽、回角落、退出、中文 UI 文案都正常。
+不要恢复 stash@{0}: cat messaging mvp WIP，不要处理或误提交 raw/wake_* 实验素材，不要提交或推送，除非我明确要求。下一步优先做目标机器手动验收；如果验收通过，就停止加功能并准备交付。
 ```

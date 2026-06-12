@@ -13,10 +13,22 @@ class TimeReminder:
 TIME_REMINDER_REPEAT = timedelta(minutes=10)
 
 
-LUNCH_REMINDER = TimeReminder("lunch", "小猪猪要乖乖按时吃午饭哟！")
-DINNER_REMINDER = TimeReminder("dinner", "小猪猪要乖乖按时吃晚饭哟！")
-BEDTIME_REMINDER = TimeReminder("bedtime", "要早点休息呀小猪猪")
-LATE_NIGHT_REMINDER = TimeReminder("late_night", "小猪猪还在忙嘛...熬夜工作辛苦惹，要记得喝点水喔！")
+LUNCH_REMINDER = TimeReminder(
+    "lunch",
+    "{mama_nickname}要记得按时吃午饭呀，不然呆呆和粑粑都会担心的喔՞･∞･՞",
+)
+DINNER_REMINDER = TimeReminder(
+    "dinner",
+    "{mama_nickname}该吃晚饭啦，想吃什么可以和粑粑说呀₍⑅ᐢ..ᐢ₎",
+)
+BEDTIME_REMINDER = TimeReminder(
+    "bedtime",
+    "已经很晚啦，{mama_nickname}早点休息呀\n꜀(^. .^꜀  )꜆੭",
+)
+LATE_NIGHT_REMINDER = TimeReminder(
+    "late_night",
+    "{mama_nickname}还在忙嘛...{pet_name}会一直陪伴{mama_nickname}呀，但是{mama_nickname}也要早点睡觉呀，熬夜记得补充水分呀。",
+)
 
 
 def _minutes(value: time) -> int:
