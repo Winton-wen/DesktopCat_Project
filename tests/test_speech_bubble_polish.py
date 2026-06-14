@@ -102,6 +102,39 @@ class SpeechBubblePolishTests(unittest.TestCase):
 
         self.assertEqual([("queued", 360, 420)], shown)
 
+    def test_clear_owner_hides_matching_visible_bubble_and_drops_matching_queue(self) -> None:
+        from desktop_cat import rig_app
+
+        hidden: list[bool] = []
+        bubble = rig_app.RigSpeechBubble.__new__(rig_app.RigSpeechBubble)
+        bubble.current_owner = 12
+        bubble.pending_messages = [
+            {"text": "same action", "owner": 12},
+            {"text": "reminder", "owner": None},
+        ]
+        bubble.hide = lambda: hidden.append(True)
+
+        bubble.clear_owner(12)
+
+        self.assertEqual([True], hidden)
+        self.assertEqual(
+            [{"text": "reminder", "owner": None}],
+            bubble.pending_messages,
+        )
+
+    def test_clear_owner_does_not_hide_unowned_reminder_bubble(self) -> None:
+        from desktop_cat import rig_app
+
+        hidden: list[bool] = []
+        bubble = rig_app.RigSpeechBubble.__new__(rig_app.RigSpeechBubble)
+        bubble.current_owner = None
+        bubble.pending_messages = []
+        bubble.hide = lambda: hidden.append(True)
+
+        bubble.clear_owner(12)
+
+        self.assertEqual([], hidden)
+
 
 if __name__ == "__main__":
     unittest.main()

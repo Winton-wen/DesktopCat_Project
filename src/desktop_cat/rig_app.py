@@ -20,7 +20,7 @@ from .companion_messages import (
     render_companion_text,
     select_companion_message,
 )
-from .config import ConfigStore
+from .config import CatConfig, ConfigStore, WELCOME_VERSION
 from .paths import app_root
 from .sprite_manifest import ACTIONS
 from .time_reminders import reminder_for_time, reminder_instance_key, reminder_is_due
@@ -50,7 +50,6 @@ COMPANION_MESSAGE_HIDE_MS = 3000
 RESET_JUMP_STEPS = 48
 RESET_JUMP_INTERVAL_MS = 42
 RESET_JUMP_HOP_PX = 30
-MAX_PENDING_ACTIONS = 8
 MAX_PENDING_BUBBLES = 8
 ACTION_FPS = {
     "idle": 12,
@@ -177,6 +176,28 @@ def idle_action_choices(
 
 def reset_return_action(start_x: int, target_x: int) -> str:
     return "return_home" if target_x >= start_x else "happy"
+
+
+def nearest_exit_side(current_x: int, window_width: int, screen_width: int) -> str:
+    left_distance = max(0, current_x)
+    right_distance = max(0, screen_width - (current_x + window_width))
+    return "left" if left_distance < right_distance else "right"
+
+
+def entry_positions(side: str, screen_width: int) -> tuple[int, int]:
+    if side == "left":
+        return -WIDTH, SCREEN_MARGIN
+    if side == "right":
+        return screen_width, screen_width - WIDTH - SCREEN_MARGIN
+    raise ValueError(f"Unsupported entry side: {side}")
+
+
+def clamped_window_y(saved_y: int, screen_height: int) -> int:
+    return max(SCREEN_MARGIN, min(saved_y, screen_height - HEIGHT - SCREEN_MARGIN))
+
+
+def first_launch_welcome_is_pending(config: CatConfig) -> bool:
+    return config.welcome_version != WELCOME_VERSION
 
 
 def saved_position_or_default(
@@ -318,6 +339,7 @@ class RigSpeechBubble:
         self.button.pack()
         self.font = tkfont.Font(family="Microsoft YaHei UI", size=10)
         self.after_id: str | None = None
+        self.current_owner: int | None = None
         self.pending_messages: list[dict] = []
         self.pet_anchor_provider = None
         self.canvas_w = 1
@@ -328,6 +350,7 @@ class RigSpeechBubble:
     def hide(self) -> None:
         current_after = self.after_id
         self.after_id = None
+        self.current_owner = None
         if current_after:
             try:
                 self.root.after_cancel(current_after)
@@ -337,6 +360,10 @@ class RigSpeechBubble:
         self.button_window.withdraw()
         self.show_next_queued_message()
 
+    def clear_all(self) -> None:
+        self.pending_messages.clear()
+        self.hide()
+
     def queue_message_if_busy(
         self,
         text: str,
@@ -345,6 +372,7 @@ class RigSpeechBubble:
         button_text: str | None,
         button_command,
         hide_ms: int,
+        owner: int | None = None,
     ) -> bool:
         if self.after_id is None:
             return False
@@ -358,9 +386,19 @@ class RigSpeechBubble:
                 "button_text": button_text,
                 "button_command": button_command,
                 "hide_ms": hide_ms,
+                "owner": owner,
             }
         )
         return True
+
+    def clear_owner(self, owner: int) -> None:
+        self.pending_messages = [
+            message
+            for message in self.pending_messages
+            if message.get("owner") != owner
+        ]
+        if self.current_owner == owner:
+            self.hide()
 
     def show_next_queued_message(self) -> None:
         if not self.pending_messages:
@@ -380,6 +418,7 @@ class RigSpeechBubble:
                 button_text=message["button_text"],
                 button_command=message["button_command"],
                 hide_ms=message["hide_ms"],
+                owner=message.get("owner"),
                 queue_if_busy=False,
             ),
         )
@@ -393,6 +432,7 @@ class RigSpeechBubble:
         button_command=None,
         hide_ms: int = 3200,
         queue_if_busy: bool = True,
+        owner: int | None = None,
     ) -> None:
         if queue_if_busy and self.queue_message_if_busy(
             text=text,
@@ -401,6 +441,7 @@ class RigSpeechBubble:
             button_text=button_text,
             button_command=button_command,
             hide_ms=hide_ms,
+            owner=owner,
         ):
             return
         padding_x = 18
@@ -469,6 +510,7 @@ class RigSpeechBubble:
         self.window.geometry(f"{self.window_w}x{self.window_h}+{x}+{y}")
         self.window.deiconify()
         self.window.lift()
+        self.current_owner = owner
         if button_text and button_command:
             self.move_button_to_pet(pet_center_x, pet_top_y)
             self.button_window.deiconify()
@@ -525,7 +567,10 @@ class RigDesktopCatApp:
         if low_distraction_mode is not None:
             self.store.config.low_distraction_mode = low_distraction_mode
         self.test_first_launch = test_first_launch
-        self.first_launch_pending = test_first_launch or not self.store.config.first_launch_completed
+        self.first_launch_pending = (
+            test_first_launch
+            or first_launch_welcome_is_pending(self.store.config)
+        )
         self.root = tk.Tk()
         self.root.title(title)
         self.root.overrideredirect(True)
@@ -552,7 +597,14 @@ class RigDesktopCatApp:
         self.happy_direction = 1
         self.happy_start: tuple[int, int] | None = None
         self.resetting_position = False
-        self.pending_actions: list[tuple[str, float]] = []
+        self.entering = False
+        self.entry_side: str | None = None
+        self.entry_target_x: int | None = None
+        self.exiting = False
+        self.exit_side: str | None = None
+        self.deferred_start_callbacks: list[tuple[int, object]] = []
+        self.action_token_counter = 0
+        self.active_action_token: int | None = None
         self.time_reminders_last_shown_at: dict[str, datetime] = {}
         self.time_reminders_dismissed: set[str] = set()
         self.companion_pack = self.load_configured_companion_pack()
@@ -570,12 +622,12 @@ class RigDesktopCatApp:
         self.action_until = time.monotonic() + 2.5
         self.root.after(120, self.tick)
         if self.first_launch_pending:
-            self.root.after(1200, self.show_first_launch_message)
+            self.schedule_after_entry(1200, self.show_first_launch_message)
         if enable_time_reminders:
-            self.root.after(1500, self.check_time_reminder)
+            self.schedule_after_entry(1500, self.check_time_reminder)
         if enable_companion_messages:
             delay_ms = FIRST_LAUNCH_COMPANION_DELAY_MS if self.first_launch_pending else DEFAULT_COMPANION_START_DELAY_MS
-            self.root.after(delay_ms, self.check_companion_message)
+            self.schedule_after_entry(delay_ms, self.check_companion_message)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -592,12 +644,49 @@ class RigDesktopCatApp:
         return sw - WIDTH - 28, sh - HEIGHT - 56
 
     def place_initially(self) -> None:
+        exit_side = getattr(self.store.config, "last_exit_side", None)
+        exit_y = getattr(self.store.config, "last_exit_y", None)
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        if exit_side in {"left", "right"} and type(exit_y) is int:
+            start_x, target_x = entry_positions(
+                exit_side,
+                screen_width,
+            )
+            y = clamped_window_y(exit_y, screen_height)
+            self.entering = True
+            self.entry_side = exit_side
+            self.entry_target_x = target_x
+            self.walk_direction = 1 if exit_side == "left" else -1
+            self.walk_can_reverse = False
+            self.action = "walk" if self.walk_direction > 0 else "walk_left"
+            self.root.geometry(f"{WIDTH}x{HEIGHT}+{start_x}+{y}")
+            return
+        if (
+            getattr(self, "first_launch_pending", False)
+            and self.store.config.last_position is None
+        ):
+            target_x, y = self.default_position()
+            self.entering = True
+            self.entry_side = "right"
+            self.entry_target_x = target_x
+            self.walk_direction = -1
+            self.walk_can_reverse = False
+            self.action = "walk_left"
+            self.root.geometry(f"{WIDTH}x{HEIGHT}+{screen_width}+{y}")
+            return
         x, y = saved_position_or_default(
             self.store.config.last_position,
             self.default_position(),
-            (self.root.winfo_screenwidth(), self.root.winfo_screenheight()),
+            (screen_width, screen_height),
         )
         self.root.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
+
+    def schedule_after_entry(self, delay_ms: int, callback) -> None:
+        if self.entering:
+            self.deferred_start_callbacks.append((delay_ms, callback))
+            return
+        self.root.after(delay_ms, callback)
 
     def action_frame_count(self) -> int:
         return {
@@ -623,6 +712,25 @@ class RigDesktopCatApp:
 
     def tick(self) -> None:
         self.frame += 1
+        if self.exiting:
+            self.frame %= self.action_frame_count()
+            self.advance_exit()
+            if self.exiting:
+                self.draw()
+                self.root.after(
+                    max(16, round(1000 / ACTION_FPS.get(self.action, 12))),
+                    self.tick,
+                )
+            return
+        if self.entering:
+            self.frame %= self.action_frame_count()
+            self.advance_entry()
+            self.draw()
+            self.root.after(
+                max(16, round(1000 / ACTION_FPS.get(self.action, 12))),
+                self.tick,
+            )
+            return
         now = time.monotonic()
         if self.action not in LOOPING_ACTIONS and self.frame >= self.action_frame_count():
             self.finish_current_action(now)
@@ -635,6 +743,68 @@ class RigDesktopCatApp:
         self.draw()
         self.root.after(max(16, round(1000 / ACTION_FPS.get(self.action, 12))), self.tick)
 
+    def advance_entry(self) -> None:
+        current_x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        target_x = self.entry_target_x
+        if target_x is None:
+            self.finish_entry()
+            return
+        step = WALK_STEP_PX if self.entry_side == "left" else -WALK_STEP_PX
+        next_x = current_x + step
+        reached = next_x >= target_x if step > 0 else next_x <= target_x
+        x = target_x if reached else next_x
+        self.root.geometry(f"+{x}+{y}")
+        if reached:
+            self.finish_entry()
+
+    def finish_entry(self) -> None:
+        self.entering = False
+        self.entry_side = None
+        self.entry_target_x = None
+        self.store.clear_exit_state()
+        self.start_action_now("idle", 1.0)
+        callbacks = self.deferred_start_callbacks
+        self.deferred_start_callbacks = []
+        for delay_ms, callback in callbacks:
+            self.root.after(delay_ms, callback)
+
+    def begin_exit(self) -> None:
+        if self.exiting:
+            return
+        self.exiting = True
+        self.entering = False
+        self.resetting_position = False
+        self.drag_start = None
+        self.window_start = None
+        self.bubble.clear_all()
+        self.exit_side = nearest_exit_side(
+            self.root.winfo_x(),
+            WIDTH,
+            self.root.winfo_screenwidth(),
+        )
+        self.walk_direction = -1 if self.exit_side == "left" else 1
+        self.walk_can_reverse = False
+        self.start_action_now(
+            "walk_left" if self.exit_side == "left" else "walk",
+            0.0,
+        )
+
+    def advance_exit(self) -> None:
+        current_x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        step = -WALK_STEP_PX if self.exit_side == "left" else WALK_STEP_PX
+        x = current_x + step
+        self.root.geometry(f"+{x}+{y}")
+        screen_width = self.root.winfo_screenwidth()
+        if x <= -WIDTH or x >= screen_width:
+            self.finish_exit()
+
+    def finish_exit(self) -> None:
+        side = self.exit_side or "right"
+        self.store.update_exit_state(side, self.root.winfo_y())
+        self.quit()
+
     def random_idle_action(self, now: float) -> None:
         current_time = self.test_rhythm_time.time() if self.test_rhythm_time else None
         actions, weights = idle_action_choices(self.store.config.low_distraction_mode, current_time=current_time)
@@ -646,23 +816,19 @@ class RigDesktopCatApp:
             self.happy_direction = self.next_horizontal_direction()
             self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
             action = self.happy_action_for_direction(self.happy_direction)
-        self.action = action
-        self.frame = 0
-        self.action_until = now + random.uniform(3.0, 6.0)
+        self.start_action_now(action, random.uniform(3.0, 6.0))
         if action in {"happy", "happy_right"}:
             self.say(TEXT["happy"])
 
     def action_can_start_immediately(self, action: str, force: bool) -> bool:
         if force or action in {"idle", "drag"}:
             return True
-        return self.action == "idle" and not self.resetting_position and not self.drag_start
-
-    def queue_action(self, action: str, seconds: float) -> None:
-        if len(self.pending_actions) >= MAX_PENDING_ACTIONS:
-            self.pending_actions.pop(0)
-        self.pending_actions.append((action, seconds))
+        return self.action == "idle" and not self.resetting_position
 
     def start_action_now(self, action: str, seconds: float) -> None:
+        self.clear_active_action_bubble()
+        self.action_token_counter = getattr(self, "action_token_counter", 0) + 1
+        self.active_action_token = self.action_token_counter
         self.action = action
         self.frame = 0
         self.action_until = time.monotonic() + seconds
@@ -672,16 +838,21 @@ class RigDesktopCatApp:
 
     def set_action(self, action: str, seconds: float, force: bool = False) -> bool:
         if not self.action_can_start_immediately(action, force):
-            self.queue_action(action, seconds)
             return False
         self.start_action_now(action, seconds)
         return True
 
-    def finish_current_action(self, now: float) -> None:
-        if self.pending_actions:
-            action, seconds = self.pending_actions.pop(0)
-            self.start_action_now(action, seconds)
+    def clear_active_action_bubble(self) -> None:
+        owner = getattr(self, "active_action_token", None)
+        if owner is None:
             return
+        bubble = getattr(self, "bubble", None)
+        if bubble is not None:
+            bubble.clear_owner(owner)
+        self.active_action_token = None
+
+    def finish_current_action(self, now: float) -> None:
+        self.clear_active_action_bubble()
         self.action = ACTION_CHAIN.get(self.action, "idle")
         self.frame = 0
         self.action_until = now + random.uniform(1.2, 2.2)
@@ -689,9 +860,32 @@ class RigDesktopCatApp:
     def pet_anchor(self) -> tuple[int, int]:
         return self.root.winfo_x() + WIDTH // 2, self.root.winfo_y() + (HEIGHT - DISPLAY_SIZE) // 2
 
+    def show_speech(
+        self,
+        text: str,
+        *,
+        hide_ms: int,
+        owner: int | None = None,
+    ) -> None:
+        kwargs = {"hide_ms": hide_ms}
+        if owner is not None:
+            kwargs["owner"] = owner
+        self.bubble.show(text, *self.pet_anchor(), **kwargs)
+
     def say(self, text: str | list[str]) -> None:
         template = random.choice(text) if isinstance(text, list) else text
-        self.bubble.show(self.render_text(template), *self.pet_anchor(), hide_ms=SHORT_BUBBLE_HIDE_MS)
+        self.show_speech(
+            self.render_text(template),
+            hide_ms=SHORT_BUBBLE_HIDE_MS,
+            owner=getattr(self, "active_action_token", None),
+        )
+
+    def say_unbound(self, text: str | list[str]) -> None:
+        template = random.choice(text) if isinstance(text, list) else text
+        self.show_speech(
+            self.render_text(template),
+            hide_ms=SHORT_BUBBLE_HIDE_MS,
+        )
 
     def render_text(self, text: str, current: datetime | None = None) -> str:
         return render_companion_text(
@@ -704,13 +898,13 @@ class RigDesktopCatApp:
 
     def show_first_launch_message(self) -> None:
         self.set_action("wave", 2.2, force=True)
-        self.bubble.show(
+        self.show_speech(
             (
                 f"{self.store.config.pet_name}来啦！我以后就是"
                 f"{self.store.config.mama_nickname}的桌面小猫啦"
             ),
-            *self.pet_anchor(),
             hide_ms=FIRST_LAUNCH_HIDE_MS,
+            owner=getattr(self, "active_action_token", None),
         )
         self.first_launch_pending = False
         if not self.test_first_launch:
@@ -718,6 +912,12 @@ class RigDesktopCatApp:
 
     def check_companion_message(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
+        if getattr(self, "action", "idle") in {"sleep_in", "sleep"}:
+            self.root.after(
+                DEFAULT_COMPANION_CHECK_MS,
+                self.check_companion_message,
+            )
+            return
         if self.store.config.low_distraction_mode:
             self.root.after(
                 LOW_DISTRACTION_COMPANION_CHECK_MS,
@@ -729,25 +929,33 @@ class RigDesktopCatApp:
             self.companion_pack.messages,
             self.companion_messages_last_shown_at,
         )
-        if message is not None:
+        if message is not None and self.show_companion_message(message, current=current):
             self.companion_messages_last_shown_at[message.id] = current
-            self.show_companion_message(message, current=current)
         self.root.after(DEFAULT_COMPANION_CHECK_MS, self.check_companion_message)
 
     def show_companion_message(
         self,
         message: CompanionMessage,
         current: datetime | None = None,
-    ) -> None:
+    ) -> bool:
         action = message.action if message.action in ACTION_FPS else "wave"
         if action == "sleep":
             action = "sleep_in"
-        self.set_action(action, 2.4)
+        if not self.set_action(action, 2.4):
+            return False
         text = self.render_text(message.text, current=current)
-        self.bubble.show(text, *self.pet_anchor(), hide_ms=COMPANION_MESSAGE_HIDE_MS)
+        self.show_speech(
+            text,
+            hide_ms=COMPANION_MESSAGE_HIDE_MS,
+            owner=getattr(self, "active_action_token", None),
+        )
+        return True
 
     def check_time_reminder(self, now: datetime | None = None) -> None:
         current = now or datetime.now()
+        if getattr(self, "action", "idle") in {"sleep_in", "sleep"}:
+            self.root.after(TIME_REMINDER_CHECK_MS, self.check_time_reminder)
+            return
         reminder = reminder_for_time(current.time())
         reminder_key = reminder_instance_key(current, reminder)
         if reminder_key and reminder_is_due(
@@ -772,15 +980,19 @@ class RigDesktopCatApp:
     def toggle_low_distraction_mode(self) -> None:
         enabled = not self.store.config.low_distraction_mode
         self.store.update_low_distraction_mode(enabled)
-        self.say(
+        self.say_unbound(
             "{pet_name}会乖乖安静地陪着{mama_nickname}\n꜀(^. .^꜀  )꜆੭"
             if enabled
             else "呆呆要和麻麻玩！"
         )
 
     def show_gift_interaction(self, text: str, action: str = "cute") -> None:
-        self.set_action(action, 2.2)
-        self.bubble.show(self.render_text(text), *self.pet_anchor(), hide_ms=SHORT_BUBBLE_HIDE_MS)
+        if self.set_action(action, 2.2):
+            self.show_speech(
+                self.render_text(text),
+                hide_ms=SHORT_BUBBLE_HIDE_MS,
+                owner=getattr(self, "active_action_token", None),
+            )
 
     def open_config(self) -> None:
         os.startfile(str(self.store.open_file()))
@@ -839,48 +1051,52 @@ class RigDesktopCatApp:
         )
 
     def happy(self) -> None:
-        self.prepare_happy_action()
-        self.say(TEXT["happy"])
+        if self.prepare_happy_action():
+            self.say(TEXT["happy"])
 
     def prepare_happy_action(self, force: bool = False) -> bool:
-        self.happy_direction = self.next_horizontal_direction()
-        self.happy_start = (self.root.winfo_x(), self.root.winfo_y())
-        return self.set_action(
-            self.happy_action_for_direction(self.happy_direction),
+        direction = self.next_horizontal_direction()
+        start = (self.root.winfo_x(), self.root.winfo_y())
+        if not self.set_action(
+            self.happy_action_for_direction(direction),
             2.0,
             force=force,
-        )
+        ):
+            return False
+        self.happy_direction = direction
+        self.happy_start = start
+        return True
 
     def cute(self) -> None:
-        self.set_action("cute", 1.9)
-        self.say(TEXT["cute"])
+        if self.set_action("cute", 1.9):
+            self.say(TEXT["cute"])
 
     def wave(self) -> None:
-        self.set_action("wave", 2.2)
-        self.say(TEXT["wave"])
+        if self.set_action("wave", 2.2):
+            self.say(TEXT["wave"])
 
     def sleep(self) -> None:
-        self.set_action("sleep_in", 5.0)
-        self.say(TEXT["sleep"])
+        if self.set_action("sleep_in", 5.0):
+            self.say(TEXT["sleep"])
 
     def walk_right(self) -> None:
-        self.walk_direction = 1
-        self.walk_can_reverse = False
-        self.set_action("walk", 1.8)
-        self.say(TEXT["walk_right"])
+        if self.set_action("walk", 1.8):
+            self.walk_direction = 1
+            self.walk_can_reverse = False
+            self.say(TEXT["walk_right"])
 
     def walk_left(self) -> None:
-        self.walk_direction = -1
-        self.walk_can_reverse = False
-        self.set_action("walk_left", 1.8)
-        self.say(TEXT["walk_left"])
+        if self.set_action("walk_left", 1.8):
+            self.walk_direction = -1
+            self.walk_can_reverse = False
+            self.say(TEXT["walk_left"])
 
     def walk(self) -> None:
         direction = self.next_horizontal_direction(random.choice([-1, 1]))
-        self.walk_direction = direction
-        self.walk_can_reverse = True
-        self.set_action("walk" if direction > 0 else "walk_left", 1.8)
-        self.say(TEXT["walk_right"] if direction > 0 else TEXT["walk_left"])
+        if self.set_action("walk" if direction > 0 else "walk_left", 1.8):
+            self.walk_direction = direction
+            self.walk_can_reverse = True
+            self.say(TEXT["walk_right"] if direction > 0 else TEXT["walk_left"])
 
     def next_horizontal_direction(self, preferred: int | None = None) -> int:
         current_x = self.root.winfo_x()
@@ -926,22 +1142,24 @@ class RigDesktopCatApp:
         self.bubble.move_to_pet(x + WIDTH // 2, y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def on_press(self, event) -> None:
+        if getattr(self, "entering", False) or getattr(self, "exiting", False):
+            return
         self.drag_start = (event.x_root, event.y_root)
         self.window_start = (self.root.winfo_x(), self.root.winfo_y())
         self.press_action = self.action
         self.drag_moved = False
         if self.action in {"sleep", "sleep_in"}:
-            self.set_action("wake", 4.0, force=self.action == "sleep")
-            self.say(TEXT["wake"])
-        else:
-            self.set_action("clicked", 1.4)
-            self.say(TEXT["pet"])
+            if self.set_action("wake", 4.0, force=self.action == "sleep"):
+                self.say(TEXT["wake"])
 
     def on_drag(self, event) -> None:
+        if getattr(self, "entering", False) or getattr(self, "exiting", False):
+            return
         if not self.drag_start or not self.window_start:
             return
+        if not self.drag_moved:
+            self.start_action_now("drag", 0.0)
         self.drag_moved = True
-        self.action = "drag"
         dx = event.x_root - self.drag_start[0]
         dy = event.y_root - self.drag_start[1]
         x = self.window_start[0] + dx
@@ -950,6 +1168,8 @@ class RigDesktopCatApp:
         self.bubble.move_to_pet(x + WIDTH // 2, y + (HEIGHT - DISPLAY_SIZE) // 2)
 
     def on_release(self, _event) -> None:
+        if getattr(self, "entering", False) or getattr(self, "exiting", False):
+            return
         press_action = self.press_action
         drag_moved = self.drag_moved
         self.drag_start = None
@@ -959,11 +1179,17 @@ class RigDesktopCatApp:
         self.store.update_position(self.root.winfo_x(), self.root.winfo_y())
         if not drag_moved and press_action in {"sleep", "sleep_in"} and self.action == "wake":
             return
+        if not drag_moved and press_action == "idle" and self.action == "idle":
+            if self.set_action("clicked", 1.4):
+                self.say(TEXT["pet"])
+            return
         if drag_moved:
             self.set_action("idle", 1.0, force=True)
             self.bubble.move_to_pet(*self.pet_anchor())
 
     def on_menu(self, event) -> None:
+        if getattr(self, "entering", False) or getattr(self, "exiting", False):
+            return
         menu = Menu(self.root, tearoff=0)
         menu.add_command(label="\u5f00\u5fc3\u4e00\u4e0b", command=self.happy)
         menu.add_command(label="卖萌一下", command=self.cute)
@@ -978,7 +1204,7 @@ class RigDesktopCatApp:
         )
         menu.add_command(label="回到屏幕角落", command=self.reset_position)
         menu.add_separator()
-        menu.add_command(label="退出", command=self.quit)
+        menu.add_command(label="退出", command=self.begin_exit)
         menu.tk_popup(event.x_root, event.y_root)
 
     def quit(self) -> None:

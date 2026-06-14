@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Python = Join-Path $Root ".petvenv\Scripts\python.exe"
-$AppName = "DesktopCatGift"
+$AppName = "$([char]0x5446)$([char]0x5446)"
 $BatchId = "20260527_motion_quality_v1"
 $GiftDir = Join-Path $Root "assets\gift"
 $GiftReadme = Get-ChildItem -LiteralPath $GiftDir -Filter "README_*.txt" | Select-Object -First 1

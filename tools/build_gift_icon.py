@@ -1,110 +1,53 @@
 from __future__ import annotations
 
-from collections import deque
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (
-    ROOT
-    / "assets"
-    / "production"
-    / "desktop_cat"
-    / "batches"
-    / "20260527_motion_quality_v1"
-    / "clean"
-    / "idle"
-    / "00.png"
-)
+REFERENCE_SOURCE = ROOT / "\u53c2\u8003\u56fe" / "1.png"
 PREVIEW = ROOT / "assets" / "gift" / "desktopcat_icon_head_preview.png"
+SIZE_PREVIEW = ROOT / "assets" / "gift" / "desktopcat_icon_size_preview.png"
 ICON = ROOT / "assets" / "gift" / "desktopcat.ico"
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
 
-# Canonical 512 px frame: head, bow, bell, and a small amount of chest.
-CROP_BOX = (122, 166, 378, 422)
+# Tight square around the complete seated cat while retaining a small white
+# margin around the ears, paws, and tail.
+REFERENCE_CROP_BOX = (55, 45, 1199, 1189)
 
 
-def retain_center_component(alpha: Image.Image, seed: tuple[int, int]) -> Image.Image:
-    width, height = alpha.size
-    pixels = alpha.load()
-    kept = Image.new("L", alpha.size, 0)
-    kept_pixels = kept.load()
-    queue = deque([seed])
-    visited = {seed}
-
-    while queue:
-        x, y = queue.popleft()
-        if pixels[x, y] == 0:
-            continue
-        kept_pixels[x, y] = pixels[x, y]
-        for next_x, next_y in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
-            point = (next_x, next_y)
-            if (
-                0 <= next_x < width
-                and 0 <= next_y < height
-                and point not in visited
-            ):
-                visited.add(point)
-                queue.append(point)
-    return kept
-
-
-def build_head_icon(source_path: Path = SOURCE) -> Image.Image:
+def build_full_cat_icon(source_path: Path = REFERENCE_SOURCE) -> Image.Image:
     with Image.open(source_path) as source:
-        crop = source.convert("RGBA").crop(CROP_BOX)
+        reference = source.convert("RGB")
+        crop = reference.crop(REFERENCE_CROP_BOX)
+        resized = crop.resize((512, 512), Image.Resampling.LANCZOS)
+    return resized.convert("RGBA")
 
-    # The production pose has a raised tail behind the right side of the head.
-    # Remove that disconnected silhouette while retaining the right ear and bow.
-    mask = crop.getchannel("A")
-    draw = ImageDraw.Draw(mask)
-    draw.polygon(
-        [
-            (204, 118),
-            (256, 118),
-            (256, 256),
-            (188, 256),
-            (198, 210),
-            (198, 146),
-        ],
-        fill=0,
-    )
-    draw.polygon(
-        [
-            (0, 218),
-            (82, 218),
-            (102, 238),
-            (154, 238),
-            (174, 218),
-            (256, 218),
-            (256, 256),
-            (0, 256),
-        ],
-        fill=0,
-    )
-    mask = retain_center_component(mask, (128, 100))
-    crop.putalpha(mask)
 
-    content_box = crop.getchannel("A").getbbox()
-    if content_box is None:
-        raise ValueError(f"No visible cat pixels found in {source_path}")
-    content = crop.crop(content_box)
-    content.thumbnail((464, 464), Image.Resampling.LANCZOS)
+def build_size_preview(icon: Image.Image) -> Image.Image:
+    canvas = Image.new("RGB", (640, 340), (244, 246, 250))
+    draw = ImageDraw.Draw(canvas)
+    x_positions = (84, 224, 364, 504, 624)
+    sizes = (16, 24, 32, 48, 64)
 
-    canvas = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
-    x = (canvas.width - content.width) // 2
-    y = (canvas.height - content.height) // 2
-    canvas.alpha_composite(content, (x, y))
+    for x, size in zip(x_positions, sizes):
+        scaled = icon.resize((size, size), Image.Resampling.LANCZOS).convert("RGB")
+        canvas.paste(scaled, (x - size // 2, 72 - size // 2))
+        draw.text((x - 18, 190), f"{size}px", fill=(32, 35, 42))
+
     return canvas
 
 
 def main() -> None:
-    preview = build_head_icon()
+    preview = build_full_cat_icon()
     PREVIEW.parent.mkdir(parents=True, exist_ok=True)
     preview.save(PREVIEW)
+    build_size_preview(preview).save(SIZE_PREVIEW)
     preview.save(ICON, format="ICO", sizes=[(size, size) for size in ICON_SIZES])
+    print(f"reference={REFERENCE_SOURCE}")
     print(f"preview={PREVIEW}")
+    print(f"size_preview={SIZE_PREVIEW}")
     print(f"icon={ICON}")
 
 

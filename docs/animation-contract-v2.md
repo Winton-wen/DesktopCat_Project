@@ -45,6 +45,15 @@ Disallowed transitions:
 - `happy -> walk`
 - any non-idle action directly into another non-idle action
 
+Busy-request policy:
+
+- Ordinary action requests are accepted only while the pet is idle.
+- A request received during another non-idle action is discarded immediately.
+- Discarded requests do not queue, do not display their paired speech bubble,
+  and are not replayed after the current action ends.
+- Drag, wake-from-sleep, return-home recovery, first launch, and visual-tour
+  force paths remain explicit exceptions.
+
 ## Acceptance
 
 - No action may visually jump at the first or last frame.

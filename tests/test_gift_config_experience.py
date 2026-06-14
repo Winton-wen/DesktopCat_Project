@@ -136,6 +136,42 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 else:
                     os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
 
+    def test_old_default_names_migrate_to_shared_kitten_defaults(self) -> None:
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                path = Path(temp_dir) / "config.json"
+                path.write_text(
+                    json.dumps(
+                        {
+                            "pet_name": "奶糖猫",
+                            "partner_nickname": "宝贝",
+                            "first_launch_completed": True,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+
+                store = ConfigStore()
+                raw = json.loads(path.read_text(encoding="utf-8"))
+
+                self.assertEqual("呆呆", store.config.pet_name)
+                self.assertEqual("麻麻", store.config.mama_nickname)
+                self.assertEqual("麻麻", store.config.partner_nickname)
+                self.assertEqual("呆呆", raw["pet_name"])
+                self.assertEqual("麻麻", raw["mama_nickname"])
+                self.assertEqual("麻麻", raw["partner_nickname"])
+                self.assertTrue(store.config.first_launch_completed)
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
     def test_first_launch_completion_round_trips(self) -> None:
         from desktop_cat.config import ConfigStore
 
@@ -148,6 +184,75 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 store.mark_first_launch_completed()
 
                 self.assertTrue(ConfigStore().config.first_launch_completed)
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
+    def test_exit_state_round_trips(self) -> None:
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                store = ConfigStore()
+                store.update_exit_state("left", 420)
+
+                loaded = ConfigStore()
+
+                self.assertEqual("left", loaded.config.last_exit_side)
+                self.assertEqual(420, loaded.config.last_exit_y)
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
+    def test_exit_state_can_be_consumed_after_entry(self) -> None:
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                store = ConfigStore()
+                store.update_exit_state("right", 300)
+                store.clear_exit_state()
+
+                loaded = ConfigStore()
+
+                self.assertIsNone(loaded.config.last_exit_side)
+                self.assertIsNone(loaded.config.last_exit_y)
+            finally:
+                if old_config_dir is None:
+                    os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
+                else:
+                    os.environ["DESKTOPCAT_CONFIG_DIR"] = old_config_dir
+
+    def test_invalid_exit_state_is_ignored(self) -> None:
+        from desktop_cat.config import ConfigStore
+
+        with self.with_config_dir() as temp_dir:
+            old_config_dir = os.environ.get("DESKTOPCAT_CONFIG_DIR")
+            os.environ["DESKTOPCAT_CONFIG_DIR"] = temp_dir
+            try:
+                path = Path(temp_dir) / "config.json"
+                path.write_text(
+                    json.dumps(
+                        {
+                            "last_exit_side": "top",
+                            "last_exit_y": True,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                store = ConfigStore()
+
+                self.assertIsNone(store.config.last_exit_side)
+                self.assertIsNone(store.config.last_exit_y)
             finally:
                 if old_config_dir is None:
                     os.environ.pop("DESKTOPCAT_CONFIG_DIR", None)
@@ -435,7 +540,8 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertTrue(script_path.exists())
         script = script_path.read_text(encoding="utf-8")
 
-        self.assertIn('AppName = "DesktopCatGift"', script)
+        self.assertIn("[char]0x5446", script)
+        self.assertNotIn('AppName = "DesktopCatGift"', script)
         self.assertIn("gift_launcher.py", script)
         self.assertIn("20260527_motion_quality_v1", script)
         self.assertIn("return_home", script)
@@ -458,7 +564,8 @@ class GiftConfigExperienceTests(unittest.TestCase):
         text = readme_path.read_text(encoding="utf-8")
 
         self.assertIn("先解压", text)
-        self.assertIn("DesktopCatGift.exe", text)
+        self.assertIn("呆呆.exe", text)
+        self.assertNotIn("DesktopCatGift.exe", text)
         self.assertIn("右键", text)
         self.assertIn("退出", text)
         self.assertIn("呆呆", text)
@@ -544,8 +651,8 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 if line.strip():
                     self.assertIn(line, catalog)
 
-    def test_gift_icon_is_generated_from_production_cat_head_crop(self) -> None:
-        from PIL import Image
+    def test_gift_icon_is_generated_from_full_cat_reference_with_white_background(self) -> None:
+        from PIL import Image, ImageChops
 
         generator = ROOT / "tools" / "build_gift_icon.py"
         preview_path = ROOT / "assets" / "gift" / "desktopcat_icon_head_preview.png"
@@ -553,16 +660,33 @@ class GiftConfigExperienceTests(unittest.TestCase):
 
         self.assertTrue(generator.exists())
         generator_source = generator.read_text(encoding="utf-8")
-        self.assertIn("20260527_motion_quality_v1", generator_source)
-        self.assertIn("clean", generator_source)
-        self.assertIn("idle", generator_source)
-        self.assertIn("00.png", generator_source)
+        self.assertIn('"1.png"', generator_source)
+        self.assertIn("reference", generator_source.lower())
+        self.assertNotIn("retain_center_component", generator_source)
         self.assertTrue(preview_path.exists())
 
         with Image.open(preview_path) as preview:
             self.assertEqual((512, 512), preview.size)
             self.assertEqual("RGBA", preview.mode)
-            self.assertIsNotNone(preview.getchannel("A").getbbox())
+            alpha = preview.getchannel("A")
+            self.assertEqual((0, 0, 512, 512), alpha.getbbox())
+            self.assertEqual((255, 255), alpha.getextrema())
+            for point in ((0, 0), (511, 0), (0, 511), (511, 511)):
+                red, green, blue, opacity = preview.getpixel(point)
+                self.assertGreaterEqual(red, 240)
+                self.assertGreaterEqual(green, 240)
+                self.assertGreaterEqual(blue, 240)
+                self.assertEqual(255, opacity)
+
+            background_color = preview.convert("RGB").getpixel((0, 0))
+            background = Image.new("RGB", preview.size, background_color)
+            difference = ImageChops.difference(preview.convert("RGB"), background)
+            foreground_mask = difference.convert("L").point(
+                lambda value: 255 if value >= 15 else 0
+            )
+            content_box = foreground_mask.getbbox()
+            self.assertIsNotNone(content_box)
+            self.assertGreaterEqual(content_box[3] - content_box[1], 440)
 
         with Image.open(icon_path) as icon:
             self.assertEqual(
@@ -582,7 +706,7 @@ class GiftConfigExperienceTests(unittest.TestCase):
             "回到屏幕角落",
             "退出",
             "中文 UI",
-            "DesktopCatGift_20260612_polished.zip",
+            "DesktopCatGift_20260613_final.zip",
         ]:
             self.assertIn(required, text)
 
@@ -748,6 +872,7 @@ class GiftConfigExperienceTests(unittest.TestCase):
                 "sleep",
                 "toggle_low_distraction_mode",
                 "reset_position",
+                "begin_exit",
                 "quit",
             )
         }
@@ -761,13 +886,31 @@ class GiftConfigExperienceTests(unittest.TestCase):
         menu = FakeMenu.instances[0]
         commands = dict(menu.commands)
         self.assertIs(commands["呆呆安静一下"], handlers["toggle_low_distraction_mode"])
-        self.assertIs(commands["退出"], handlers["quit"])
+        self.assertIs(commands["退出"], handlers["begin_exit"])
         self.assertNotIn("打开配置文件", commands)
         self.assertNotIn("打开配置文件夹", commands)
         self.assertNotIn("编辑陪伴语料", commands)
         self.assertNotIn("我想他了", commands)
         self.assertNotIn("麻麻辛苦啦", commands)
         self.assertEqual((120, 240), menu.popup_position)
+
+    def test_rig_menu_is_disabled_during_entry_and_exit(self) -> None:
+        from desktop_cat import rig_app
+
+        event = type("Event", (), {"x_root": 120, "y_root": 240})()
+        for entering, exiting in ((True, False), (False, True)):
+            with self.subTest(entering=entering, exiting=exiting):
+                app = rig_app.RigDesktopCatApp.__new__(
+                    rig_app.RigDesktopCatApp
+                )
+                app.entering = entering
+                app.exiting = exiting
+                with patch.object(
+                    rig_app,
+                    "Menu",
+                    side_effect=AssertionError("menu must stay closed"),
+                ):
+                    app.on_menu(event)
 
     def test_first_launch_welcome_uses_all_three_identity_fields(self) -> None:
         from desktop_cat import rig_app
@@ -808,6 +951,41 @@ class GiftConfigExperienceTests(unittest.TestCase):
         self.assertFalse(app.first_launch_pending)
         self.assertEqual([True], completion_marks)
 
+    def test_current_welcome_is_pending_for_legacy_completed_config(self) -> None:
+        from desktop_cat.config import CatConfig
+        from desktop_cat.rig_app import first_launch_welcome_is_pending
+
+        config = CatConfig(first_launch_completed=True)
+
+        self.assertTrue(first_launch_welcome_is_pending(config))
+
+    def test_current_welcome_is_not_pending_after_version_is_recorded(self) -> None:
+        from desktop_cat.config import CatConfig, WELCOME_VERSION
+        from desktop_cat.rig_app import first_launch_welcome_is_pending
+
+        config = CatConfig(
+            first_launch_completed=True,
+            welcome_version=WELCOME_VERSION,
+        )
+
+        self.assertFalse(first_launch_welcome_is_pending(config))
+
+    def test_mark_first_launch_completed_persists_current_welcome_version(self) -> None:
+        from desktop_cat.config import ConfigStore, WELCOME_VERSION
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(
+                os.environ,
+                {"DESKTOPCAT_CONFIG_DIR": temp_dir},
+                clear=False,
+            ):
+                store = ConfigStore()
+                store.mark_first_launch_completed()
+                loaded = ConfigStore()
+
+        self.assertTrue(loaded.config.first_launch_completed)
+        self.assertEqual(WELCOME_VERSION, loaded.config.welcome_version)
+
     def test_first_launch_preview_does_not_persist_completion(self) -> None:
         from desktop_cat import rig_app
 
@@ -829,7 +1007,7 @@ class GiftConfigExperienceTests(unittest.TestCase):
         app.test_first_launch = True
         app.first_launch_pending = True
         app.pet_anchor = lambda: (320, 240)
-        app.set_action = lambda *_args, **_kwargs: None
+        app.set_action = lambda *_args, **_kwargs: True
         app.bubble = type("Bubble", (), {"show": lambda *_args, **_kwargs: None})()
 
         app.show_first_launch_message()
@@ -852,7 +1030,7 @@ class GiftConfigExperienceTests(unittest.TestCase):
         app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
         app.store = Store()
         messages: list[str] = []
-        app.say = messages.append
+        app.say_unbound = messages.append
 
         app.toggle_low_distraction_mode()
         app.toggle_low_distraction_mode()
@@ -884,7 +1062,7 @@ class GiftConfigExperienceTests(unittest.TestCase):
         app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
         app.store = Store()
         app.pet_anchor = lambda: (320, 240)
-        app.set_action = lambda *_args, **_kwargs: None
+        app.set_action = lambda *_args, **_kwargs: True
         app.bubble = type(
             "Bubble",
             (),
@@ -912,6 +1090,54 @@ class GiftConfigExperienceTests(unittest.TestCase):
             ],
             [text for text, _kwargs in shown],
         )
+
+    def test_sleeping_skips_fixed_time_reminders_without_marking_them(self) -> None:
+        from desktop_cat import rig_app
+
+        for action in ("sleep_in", "sleep"):
+            with self.subTest(action=action):
+                shown: list[object] = []
+                scheduled: list[int] = []
+                app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+                app.action = action
+                app.root = type(
+                    "Root",
+                    (),
+                    {"after": lambda _self, delay, _callback: scheduled.append(delay)},
+                )()
+                app.time_reminders_last_shown_at = {}
+                app.time_reminders_dismissed = set()
+                app.render_text = lambda text: text
+                app.pet_anchor = lambda: (10, 20)
+                app.bubble = type(
+                    "Bubble",
+                    (),
+                    {"show": lambda *_args, **_kwargs: shown.append(True)},
+                )()
+
+                app.check_time_reminder(datetime(2026, 6, 14, 12, 0))
+
+                self.assertEqual([], shown)
+                self.assertEqual({}, app.time_reminders_last_shown_at)
+                self.assertEqual([rig_app.TIME_REMINDER_CHECK_MS], scheduled)
+
+    def test_rejected_gift_interaction_does_not_show_bubble(self) -> None:
+        from desktop_cat import rig_app
+
+        shown: list[object] = []
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.set_action = lambda *_args, **_kwargs: False
+        app.render_text = lambda text: text
+        app.pet_anchor = lambda: (20, 30)
+        app.bubble = type(
+            "Bubble",
+            (),
+            {"show": lambda *_args, **_kwargs: shown.append(True)},
+        )()
+
+        app.show_gift_interaction("ignored", action="cute")
+
+        self.assertEqual([], shown)
 
     def test_reset_completion_and_quit_menu_use_final_copy(self) -> None:
         from desktop_cat import rig_app

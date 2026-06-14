@@ -1,15 +1,19 @@
 # DesktopCat / DesktopPig Next Session Handoff
 
-Updated: 2026-06-12 +08:00
+Updated: 2026-06-13 +08:00
 
 ## Project
 
 - Repo path: `E:\Project\DesktopPig_Project`
 - Remote: `https://github.com/Winton-wen/DesktopCat_Project.git`
 - Branch: `main`
-- Latest functional release commit: `ee8785b Polish DesktopCat companion gift experience`
+- The final release work is committed and pushed on `main`.
 - The 2026-06-12 copywriting, anniversary, menu, visual-tour, icon, direction,
   bubble, reminder-button, tests, docs, and packaging changes are committed.
+- The busy-action request drop behavior, action-bound bubble lifecycle,
+  full-cat white-background icon, legacy `奶糖猫/宝贝` config migration,
+  first-launch entry, exit/re-entry, sleep silence, and versioned welcome are
+  implemented, verified, committed, pushed, and packaged.
 
 ## Current Goal
 
@@ -71,19 +75,16 @@ git stash list -n 5
 
 ## Current Git State
 
-Last checked on 2026-06-12 after release commit `ee8785b`:
+Expected after the final release commit and local artifact cleanup:
 
 ```text
-## main...origin/main [ahead 1 before the handoff commit and push]
+## main...origin/main
 ```
 
-The only intentional untracked files are experiment assets under:
-
-```text
-assets/production/desktop_cat/batches/20260527_motion_quality_v1/raw/wake_*
-```
-
-Treat those as experiment material and never stage them accidentally.
+The source tree, engineering documentation, accepted production batch, reference
+images, and final recipient ZIP are retained. Generated build directories, old
+ZIPs, old extracted smoke copies, local backups, caches, and experimental
+`raw/wake_*` material are removed locally to reduce disk usage.
 
 Deferred stash:
 
@@ -100,12 +101,35 @@ stash@{0}: On main: cat messaging mvp WIP
   `assets/production/desktop_cat/batches/20260527_motion_quality_v1/clean`
 - Wake remains the accepted 80-frame, 32fps route.
 - Do not resume the rejected 96-frame wake expansion.
-- Non-idle actions and speech bubbles queue instead of interrupting each other.
+- Ordinary action-and-bubble requests are accepted only while the pet is idle.
+- Requests received during a non-idle action are discarded immediately rather
+  than queued, and their paired bubbles are not shown later.
+- Action-triggered bubbles are owned by their matching action. They disappear
+  when that action finishes or is replaced, including when clicking transitions
+  into dragging.
+- Idle click feedback is confirmed on mouse release only when no drag occurred,
+  so pressing and dragging never flashes the `clicked` action or petting bubble.
+- Queued action bubbles are discarded if their action finishes before they are
+  shown.
+- The speech-bubble queue remains independent for no-action messages such as
+  fixed reminders, so one visible bubble is not overwritten by another.
 - Drag remains immediate.
 - Clicking during sleep can wake immediately.
 - `return_home` remains the accepted lively jump-back behavior.
 - Last valid screen position is restored; invalid/off-screen positions fall back
   to the default corner.
+- On the true first launch, the kitten starts beyond the lower-right screen
+  edge, walks left into the default lower-right position, and only then shows
+  the first-launch welcome action and bubble.
+- Welcome completion is versioned. Existing configs with the legacy
+  `first_launch_completed=true` but no current `welcome_version` receive the
+  current welcome once, then persist the version so it does not repeat.
+- Normal menu exit interrupts the current action and walks through the nearest
+  left or right screen edge before shutdown.
+- The next launch walks in from the same edge near the saved vertical position,
+  then consumes the saved exit state and returns to idle.
+- Automatic companion messages and fixed-time reminders are suppressed during
+  `sleep_in` and `sleep`; suppressed speech is not queued or marked as shown.
 
 ## Current Companion Narrative
 
@@ -133,6 +157,8 @@ stash@{0}: On main: cat messaging mvp WIP
 - A random due message is selected from that combined pool.
 - Messages from unrelated time-specific categories are not mixed in.
 - Cooldowns still apply per message ID.
+- Automatic messages rejected because the pet is busy are not shown and do not
+  consume their cooldown.
 - In low-distraction mode, automatic companion messages are skipped entirely.
 - Fixed lunch/dinner/bedtime/late-night reminders remain separate.
 
@@ -218,7 +244,8 @@ menu entries were removed.
 
 ## Gift Icon And Packaging
 
-- EXE icon uses a close-up 呆呆 head rather than the full body:
+- EXE icon uses the complete seated cat from `参考图/1.png` on its original
+  warm-white background, tightly cropped to fill a normal desktop icon:
   `assets/gift/desktopcat.ico`
 - Icon generator: `tools/build_gift_icon.py`
 - Preview images:
@@ -226,33 +253,114 @@ menu entries were removed.
   - `assets/gift/desktopcat_icon_size_preview.png`
 - Partner README no longer exposes backend/config editing commands.
 
-Latest deliverable:
+Latest deliverable containing all current uncommitted changes:
 
 ```text
-dist/DesktopCatGift_20260612_polished.zip
+dist/DesktopCatGift_20260613_final.zip
 ```
 
 Size:
 
 ```text
-82,728,010 bytes
+83,344,029 bytes
 ```
 
 SHA256:
 
 ```text
-2DA08358932C00531EF2480CF28BA091A1DA54414EF14F80944368BA8FBFFB81
+B383ED1FD450EA4AA52ED434CD3FE08DA11F5EB4802A861AD0F3968E8C11DFAD
 ```
 
 Unzipped executable:
 
 ```text
-dist/DesktopCatGift/DesktopCatGift.exe
+dist/呆呆/呆呆.exe
 ```
 
 `dist/` and zip files are ignored and are not committed.
 
+This package contains the busy-request behavior, action-bound bubble lifecycle,
+nearest-edge exit/re-entry animation, sleep-time speech suppression, the
+`呆呆/呆呆.exe` recipient-facing name, first-launch right-edge entry, full-cat
+icon, current `麻麻/呆呆/粑粑` defaults, and automatic migration of the historical
+`奶糖猫/宝贝` defaults.
+
 ## Validation Already Run
+
+Exit/re-entry, sleep silence, and Chinese gift naming completed locally on
+2026-06-14:
+
+- Menu exit interrupts the current action and walks through the nearest
+  horizontal screen edge before shutdown.
+- A fresh first launch starts beyond the lower-right screen edge, walks into
+  the default corner position, and defers the welcome action and bubble until
+  entry completes.
+- The next launch starts outside the saved side, walks fully into view near the
+  saved vertical position, then consumes the saved exit metadata.
+- Automatic companion and fixed-time reminders do not display or consume state
+  during `sleep_in` or `sleep`.
+- The build output and ZIP contents are `呆呆/呆呆.exe`; directory and executable
+  Unicode code points were verified after extraction.
+- Fresh full-suite result: `193 passed`.
+- Production batch QA, build, fresh-start smoke, saved-entry smoke, ZIP
+  extraction, and extracted EXE smoke passed.
+
+Action-bound bubble lifecycle completed locally on 2026-06-13:
+
+- Action-triggered interaction, first-launch, and automatic companion bubbles
+  are bound to the action token that created them.
+- Natural action completion and forced action replacement clear only matching
+  current or queued bubbles.
+- Starting a drag clears the click action bubble immediately.
+- Fixed reminders and state-only bubbles remain unowned and keep their
+  independent timers.
+- Focused result: `117 passed`.
+- Fresh full-suite result: `176 passed`.
+- Production batch QA and gift rebuild passed.
+- Rebuilt and extracted EXE smoke both exited with no lingering process after
+  allowing for PyInstaller startup time.
+
+Busy-action request drop behavior completed locally on 2026-06-12:
+
+- Removed the runtime action queue.
+- Ordinary action-and-bubble requests received while the pet is non-idle are
+  discarded immediately and are never replayed.
+- An idle mouse press waits for release. If no drag occurred, release starts
+  `clicked` immediately; dragging starts without any petting action or bubble.
+- Rejected happy and walk requests do not mutate direction or motion state.
+- Automatic companion messages rejected while busy do not show a bubble and do
+  not consume cooldown.
+- Drag, wake-from-sleep, return-home, first-launch, and visual-tour force paths
+  remain available.
+- The independent speech-bubble queue remains for no-action messages.
+
+Focused behavior result:
+
+```text
+131 passed
+```
+
+Fresh full-suite result after icon and legacy-config migration:
+
+```text
+169 passed
+```
+
+Fresh visual-tour GUI smoke:
+
+```text
+copywriting_visual_tour_items=53
+desktopcat_lingering_processes=0
+```
+
+Fresh gift-package validation:
+
+```text
+production_batch_full_qa_ok
+built_smoke_exit=0 migrated=True pet_name=呆呆 mama_nickname=麻麻
+zip_smoke_exit=0 migrated=True pet_name=呆呆 mama_nickname=麻麻
+desktopcat_lingering_processes=0
+```
 
 Direction, bubble, copy, and reminder-button polish completed on 2026-06-12:
 
@@ -275,7 +383,7 @@ Focused regression result:
 Current full-suite result:
 
 ```text
-158 passed
+169 passed
 ```
 
 Current full suite after adding and polishing the exhaustive copywriting visual tour:
@@ -287,7 +395,7 @@ python -m pytest -q
 Result:
 
 ```text
-158 passed
+169 passed
 ```
 
 Copywriting visual-tour collection:
@@ -372,14 +480,14 @@ Result:
 
 ```text
 production_batch_full_qa_ok
-Gift build complete: dist\DesktopCatGift\DesktopCatGift.exe
+Gift build complete: dist\呆呆\呆呆.exe
 ```
 
 Final zip was expanded successfully, contained the EXE and Chinese README, and
 the extracted EXE passed:
 
 ```powershell
-DesktopCatGift.exe --smoke-ms 3000
+呆呆.exe --smoke-ms 3000
 ```
 
 No lingering DesktopCat process remained.
@@ -400,22 +508,33 @@ LF/CRLF warnings.
   copy, README text, menu labels, or trigger rules.
 - Do not run multiple production QA scopes in parallel because they write to
   shared QA directories.
+- The final ZIP remains ignored by Git and is retained locally for direct
+  delivery.
 
 ## Next Recommended Steps
 
-The project passed local manual visual acceptance and release packaging on
-2026-06-12. The remaining step is delivery and, if available, a final smoke on
-the recipient's Windows machine.
+The project passed local visual acceptance and release packaging on 2026-06-13.
+The remaining step is target-machine manual acceptance. Do not add more features
+unless that acceptance finds a concrete release blocker.
 
-1. Test `dist/DesktopCatGift_20260612_polished.zip` on the target Windows
+1. Test `dist/DesktopCatGift_20260613_final.zip` on the target Windows
    machine.
-2. Confirm first launch, 10-second welcome, Chinese text, dragging, right-click
-   menu, low-distraction toggle, return to corner, icon size, and clean exit.
-3. Confirm the three backend menu entries are absent.
-4. Confirm normal mode produces varied automatic speech over time and
+2. Confirm first launch, action-synchronized welcome bubble, Chinese text,
+   dragging, right-click menu, low-distraction toggle, return to corner, icon
+   size, and clean exit.
+3. Confirm every action-triggered bubble disappears when its matching action
+   ends, while fixed reminders remain visible for their independent duration.
+4. Confirm menu exit walks through the nearest edge and the next launch walks
+   back in from that same side near the saved vertical position.
+5. Confirm no automatic or fixed-time speech appears while the kitten is
+   entering sleep or sleeping.
+6. Confirm the extracted folder and executable are `呆呆/呆呆.exe`.
+7. Confirm the three backend menu entries are absent.
+8. Confirm normal mode produces varied automatic speech over time and
    low-distraction mode produces no automatic companion speech.
-5. Stop adding features unless target-machine acceptance finds a concrete
-   release blocker.
+9. Confirm a machine with an old `奶糖猫/宝贝` config starts as `呆呆/麻麻`.
+10. If target-machine acceptance passes, stop changing the package and wait for
+   an explicit request before committing or pushing the local changes.
 
 ## Useful Commands
 
@@ -477,7 +596,7 @@ python candidate_launcher.py 20260527_motion_quality_v1
 
 请先恢复上下文：读取 handoff 中“Must Read First”列出的文件，然后检查 git status --short --branch、git log -8 --oneline --decorate、git stash list -n 5。
 
-最新语料、周年计算、菜单精简、头像图标、全部语料视觉巡演和包装改动已完成。最新可交付包是 dist/DesktopCatGift_20260612_polished.zip，SHA256 为 2DA08358932C00531EF2480CF28BA091A1DA54414EF14F80944368BA8FBFFB81，已通过 158 个测试、53 条语料巡演 smoke、生产批次 QA、构建、zip 解压和构建版/解压版 exe smoke。
+最终发布内容已经提交并推送到 main。忙碌动作请求丢弃、动作结束同步关闭对应气泡、拖拽不触发摸头反馈、首次启动右侧入场、旧配置补显示一次当前欢迎语、退出/再次入场动画、睡眠静默、`呆呆.exe` 中文交付名、完整猫猫白底图标和旧“奶糖猫/宝贝”到“呆呆/麻麻”的配置迁移均已完成。最新可交付包是 dist/DesktopCatGift_20260613_final.zip，大小 83,344,029 bytes，SHA256 为 B383ED1FD450EA4AA52ED434CD3FE08DA11F5EB4802A861AD0F3968E8C11DFAD，已通过 193 个测试、53 条语料巡演 smoke、生产批次 QA、构建、zip 解压、旧配置迁移、首次启动右侧入场、旧配置欢迎版本升级、入场状态消费和构建版/解压版 exe smoke。
 
-不要恢复 stash@{0}: cat messaging mvp WIP，不要处理或误提交 raw/wake_* 实验素材，不要提交或推送，除非我明确要求。下一步优先做目标机器手动验收；如果验收通过，就停止加功能并准备交付。
+不要恢复 stash@{0}: cat messaging mvp WIP，不要处理、删除或误提交 raw/wake_* 实验素材，不要提交或推送，除非我明确要求。下一步只做目标机器手动验收，重点检查图标大小、中文文案、旧配置迁移、动作请求丢弃和干净退出；如果验收通过，就停止修改并准备交付。
 ```

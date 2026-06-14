@@ -12,8 +12,11 @@ PET_NAME = "\u5446\u5446"
 MAMA_NICKNAME = "\u9ebb\u9ebb"
 PAPA_NICKNAME = "\u7c91\u7c91"
 PARTNER_NICKNAME = MAMA_NICKNAME
+LEGACY_PET_NAME = "\u5976\u7cd6\u732b"
+LEGACY_PARTNER_NICKNAME = "\u5b9d\u8d1d"
 DEFAULT_COMPANION_MESSAGE_PACK = "assets/companion_messages/partner_default.json"
 USER_COMPANION_MESSAGE_PACK = "companion_messages/partner_custom.json"
+WELCOME_VERSION = "2026-06-14-right-edge-entry"
 README_NAME = "README.txt"
 README_TEXT = """DesktopCat 配置说明
 
@@ -29,7 +32,9 @@ config.json 里的称呼设置：
 - low_distraction_mode: true 表示更安静，false 表示正常陪伴。
 - companion_message_pack: 当前使用的陪伴语料文件路径。
 - first_launch_completed: 是否已经显示过首次欢迎语。
+- welcome_version: 已经显示过的欢迎版本，用于新版欢迎语只补显示一次。
 - last_position: 呆呆上次停留的位置。
+- last_exit_side / last_exit_y: 呆呆正常退出时走出的屏幕边缘和纵向位置。
 
 companion_messages/partner_custom.json 是高级自定义陪伴语料文件。
 text 支持 {pet_name}、{mama_nickname}、{papa_nickname}。
@@ -53,8 +58,11 @@ class CatConfig:
     autostart: bool = False
     low_distraction_mode: bool = False
     first_launch_completed: bool = False
+    welcome_version: str | None = None
     companion_message_pack: str = DEFAULT_COMPANION_MESSAGE_PACK
     last_position: dict[str, int] | None = None
+    last_exit_side: str | None = None
+    last_exit_y: int | None = None
 
 
 class ConfigStore:
@@ -91,12 +99,22 @@ class ConfigStore:
             return config
 
         config = CatConfig()
+        migrated_legacy_defaults = False
         config.pet_name = self._text_or_default(raw.get("pet_name"), config.pet_name)
+        if config.pet_name == LEGACY_PET_NAME:
+            config.pet_name = PET_NAME
+            migrated_legacy_defaults = True
         config.partner_nickname = self._text_or_default(raw.get("partner_nickname"), config.partner_nickname)
+        if config.partner_nickname == LEGACY_PARTNER_NICKNAME:
+            config.partner_nickname = PARTNER_NICKNAME
+            migrated_legacy_defaults = True
         config.mama_nickname = self._text_or_default(
             raw.get("mama_nickname"),
             config.partner_nickname,
         )
+        if config.mama_nickname == LEGACY_PARTNER_NICKNAME:
+            config.mama_nickname = MAMA_NICKNAME
+            migrated_legacy_defaults = True
         config.papa_nickname = self._text_or_default(raw.get("papa_nickname"), config.papa_nickname)
         messages = raw.get("messages")
         if isinstance(messages, list) and all(isinstance(item, str) for item in messages):
@@ -112,6 +130,8 @@ class ConfigStore:
             if isinstance(raw.get("first_launch_completed"), bool)
             else config.first_launch_completed
         )
+        if isinstance(raw.get("welcome_version"), str):
+            config.welcome_version = raw["welcome_version"].strip() or None
         config.companion_message_pack = self._text_or_default(
             raw.get("companion_message_pack"),
             config.companion_message_pack,
@@ -119,6 +139,12 @@ class ConfigStore:
         pos = raw.get("last_position")
         if isinstance(pos, dict) and type(pos.get("x")) is int and type(pos.get("y")) is int:
             config.last_position = {"x": pos["x"], "y": pos["y"]}
+        if raw.get("last_exit_side") in {"left", "right"}:
+            config.last_exit_side = raw["last_exit_side"]
+        if type(raw.get("last_exit_y")) is int:
+            config.last_exit_y = raw["last_exit_y"]
+        if migrated_legacy_defaults:
+            self.save(config)
         return config
 
     def _text_or_default(self, value: Any, default: str) -> str:
@@ -140,13 +166,28 @@ class ConfigStore:
             "autostart": self.config.autostart,
             "low_distraction_mode": self.config.low_distraction_mode,
             "first_launch_completed": self.config.first_launch_completed,
+            "welcome_version": self.config.welcome_version,
             "companion_message_pack": self.config.companion_message_pack,
             "last_position": self.config.last_position,
+            "last_exit_side": self.config.last_exit_side,
+            "last_exit_y": self.config.last_exit_y,
         }
         self.path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def update_position(self, x: int, y: int) -> None:
         self.config.last_position = {"x": x, "y": y}
+        self.save()
+
+    def update_exit_state(self, side: str, y: int) -> None:
+        if side not in {"left", "right"}:
+            raise ValueError(f"Unsupported exit side: {side}")
+        self.config.last_exit_side = side
+        self.config.last_exit_y = y
+        self.save()
+
+    def clear_exit_state(self) -> None:
+        self.config.last_exit_side = None
+        self.config.last_exit_y = None
         self.save()
 
     def update_low_distraction_mode(self, enabled: bool) -> None:
@@ -155,6 +196,7 @@ class ConfigStore:
 
     def mark_first_launch_completed(self) -> None:
         self.config.first_launch_completed = True
+        self.config.welcome_version = WELCOME_VERSION
         try:
             self.save()
         except OSError:

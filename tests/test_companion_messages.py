@@ -534,7 +534,11 @@ class CompanionMessageTests(unittest.TestCase):
             )
         )
         app.bubble = FakeBubble()
-        app.set_action = lambda action, duration: action_calls.append((action, duration))
+        def accept_action(action: str, duration: float) -> bool:
+            action_calls.append((action, duration))
+            return True
+
+        app.set_action = accept_action
         app.pet_anchor = lambda: (17, 29)
         message = CompanionMessage(
             id="sleep_01",
@@ -545,8 +549,9 @@ class CompanionMessageTests(unittest.TestCase):
         )
         original_message = message
 
-        app.show_companion_message(message)
+        shown = app.show_companion_message(message)
 
+        self.assertTrue(shown)
         self.assertEqual([("sleep_in", 2.4)], action_calls)
         self.assertEqual(
             [("Mimi says goodnight to Mama and Papa.", 17, 29, 3000)],
@@ -557,6 +562,82 @@ class CompanionMessageTests(unittest.TestCase):
             "{pet_name} says goodnight to {mama_nickname} and {papa_nickname}.",
             message.text,
         )
+
+    def test_busy_companion_message_is_not_shown(self) -> None:
+        from desktop_cat.rig_app import CompanionMessage, RigDesktopCatApp
+
+        bubble_calls: list[object] = []
+        app = RigDesktopCatApp.__new__(RigDesktopCatApp)
+        app.set_action = lambda *_args, **_kwargs: False
+        app.render_text = lambda text, current=None: text
+        app.pet_anchor = lambda: (20, 30)
+        app.bubble = type(
+            "Bubble",
+            (),
+            {"show": lambda *_args, **_kwargs: bubble_calls.append(True)},
+        )()
+        message = CompanionMessage(
+            id="busy",
+            category="comfort",
+            text="ignored",
+            cooldown_hours=12,
+            action="wave",
+        )
+
+        shown = app.show_companion_message(message)
+
+        self.assertFalse(shown)
+        self.assertEqual([], bubble_calls)
+
+    def test_companion_check_does_not_record_cooldown_when_message_is_rejected(self) -> None:
+        from desktop_cat import rig_app
+
+        current = datetime(2026, 6, 12, 20, 0)
+        message = rig_app.CompanionMessage(
+            id="comfort",
+            category="comfort",
+            text="hello",
+            cooldown_hours=12,
+            action="wave",
+        )
+        scheduled: list[int] = []
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.store = SimpleNamespace(config=SimpleNamespace(low_distraction_mode=False))
+        app.root = SimpleNamespace(after=lambda delay, _callback: scheduled.append(delay))
+        app.companion_pack = SimpleNamespace(messages=[message])
+        app.companion_messages_last_shown_at = {}
+        app.show_companion_message = lambda *_args, **_kwargs: False
+
+        with patch.object(rig_app, "select_companion_message", return_value=message):
+            app.check_companion_message(current)
+
+        self.assertEqual({}, app.companion_messages_last_shown_at)
+        self.assertEqual([rig_app.DEFAULT_COMPANION_CHECK_MS], scheduled)
+
+    def test_companion_check_records_cooldown_after_message_is_shown(self) -> None:
+        from desktop_cat import rig_app
+
+        current = datetime(2026, 6, 12, 20, 0)
+        message = rig_app.CompanionMessage(
+            id="comfort",
+            category="comfort",
+            text="hello",
+            cooldown_hours=12,
+            action="wave",
+        )
+        scheduled: list[int] = []
+        app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+        app.store = SimpleNamespace(config=SimpleNamespace(low_distraction_mode=False))
+        app.root = SimpleNamespace(after=lambda delay, _callback: scheduled.append(delay))
+        app.companion_pack = SimpleNamespace(messages=[message])
+        app.companion_messages_last_shown_at = {}
+        app.show_companion_message = lambda *_args, **_kwargs: True
+
+        with patch.object(rig_app, "select_companion_message", return_value=message):
+            app.check_companion_message(current)
+
+        self.assertEqual({"comfort": current}, app.companion_messages_last_shown_at)
+        self.assertEqual([rig_app.DEFAULT_COMPANION_CHECK_MS], scheduled)
 
     def test_low_distraction_mode_skips_automatic_companion_messages(self) -> None:
         from desktop_cat import rig_app
@@ -579,6 +660,36 @@ class CompanionMessageTests(unittest.TestCase):
 
         self.assertEqual([], shown)
         self.assertEqual([rig_app.LOW_DISTRACTION_COMPANION_CHECK_MS], scheduled)
+
+    def test_sleeping_skips_automatic_companion_messages_without_cooldown(self) -> None:
+        from desktop_cat import rig_app
+
+        for action in ("sleep_in", "sleep"):
+            with self.subTest(action=action):
+                scheduled: list[int] = []
+                app = rig_app.RigDesktopCatApp.__new__(rig_app.RigDesktopCatApp)
+                app.action = action
+                app.store = SimpleNamespace(
+                    config=SimpleNamespace(low_distraction_mode=False)
+                )
+                app.root = SimpleNamespace(
+                    after=lambda delay, _callback: scheduled.append(delay)
+                )
+                app.companion_pack = SimpleNamespace(messages=[])
+                app.companion_messages_last_shown_at = {}
+
+                with patch.object(
+                    rig_app,
+                    "select_companion_message",
+                    side_effect=AssertionError("must not select while sleeping"),
+                ):
+                    app.check_companion_message(datetime(2026, 6, 14, 2, 0))
+
+                self.assertEqual({}, app.companion_messages_last_shown_at)
+                self.assertEqual(
+                    [rig_app.DEFAULT_COMPANION_CHECK_MS],
+                    scheduled,
+                )
 
 
 if __name__ == "__main__":
